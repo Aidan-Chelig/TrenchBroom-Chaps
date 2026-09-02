@@ -142,6 +142,9 @@ add_custom_command(TARGET TbMdlLibTest POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${TEST_FIXTURE_SOURCE_DIR}" "${TEST_FIXTURE_DEST_DIR}/test"
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${TB_RESOURCE_DIR}/games" "${TEST_FIXTURE_DEST_DIR}/games"
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${TB_RESOURCE_DIR}/games-testing" "${TEST_FIXTURE_DEST_DIR}/games"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_SOURCE_DIR}/concrete_wall_21.bmat"
+    "${TEST_FIXTURE_DEST_DIR}/test/mdl/LoadMaterialCollections/concrete_wall_21.bmat"
 )
 
 include(Catch)

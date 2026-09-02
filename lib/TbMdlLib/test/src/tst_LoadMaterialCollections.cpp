@@ -161,6 +161,35 @@ TEST_CASE("LoadMaterialCollections")
         fs, materialConfig, "material.png", createResource, {}, std::nullopt));
     }
 
+    SECTION("BMAT material bundle")
+    {
+      auto bmatFs = fs::DiskFileSystem{fixtureRoot / "test/mdl/LoadMaterialCollections"};
+      const auto bmatMaterialConfig = mdl::MaterialConfig{
+        "",
+        {".bmat"},
+        "",
+        std::nullopt,
+        "",
+        {},
+      };
+
+      const auto material = loadMaterial(
+                              bmatFs,
+                              bmatMaterialConfig,
+                              "concrete_wall_21.bmat",
+                              createResource,
+                              {},
+                              std::nullopt)
+                            | kdl::value();
+
+      REQUIRE(material.texture());
+      CHECK(material.texture()->width() == 256u);
+      CHECK(material.texture()->height() == 256u);
+      CHECK(
+        material.effectiveAlphaFunc()
+        == gl::MaterialAlphaFunc{gl::MaterialAlphaFunc::Compare::GreaterEqual, 0.5f});
+    }
+
     SECTION(
       "a `{`-prefixed name on a MIP texture extension eagerly sets "
       "Material::effectiveAlphaFunc, without resolving the texture resource")

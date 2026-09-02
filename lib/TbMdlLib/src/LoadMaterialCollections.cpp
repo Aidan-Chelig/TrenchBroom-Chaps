@@ -29,6 +29,7 @@
 #include "gl/Texture.h"
 #include "gl/TextureResource.h"
 #include "mdl/GameConfig.h"
+#include "mdl/LoadBmatTexture.h"
 #include "mdl/LoadImageTexture.h"
 #include "mdl/LoadMipTexture.h"
 #include "mdl/LoadShaders.h"
@@ -285,6 +286,21 @@ gl::ResourceLoader<gl::Texture> makeTextureResourceLoader(
   };
 }
 
+gl::ResourceLoader<gl::Texture> makeBmatTextureResourceLoader(
+  const std::filesystem::path& path, const fs::FileSystem& fs)
+{
+  return [&, path]() -> Result<gl::Texture> {
+    return fs.openFile(path) | kdl::and_then([](auto file) {
+             auto reader = file->reader();
+             return loadBmatTexture(reader)
+                    | kdl::transform([](auto bmat) { return std::move(bmat.texture); });
+           })
+           | kdl::or_else([&](auto e) -> Result<gl::Texture> {
+               return Error{fmt::format("Could not load BMAT '{}': {}", path, e.msg)};
+             });
+  };
+}
+
 Result<gl::Material> loadTextureMaterial(
   const std::filesystem::path& texturePath,
   const fs::FileSystem& fs,
@@ -298,8 +314,11 @@ Result<gl::Material> loadTextureMaterial(
                              : fs::matchAnyPath;
   auto name = getMaterialNameFromPathSuffix(texturePath, prefixLength);
 
-  auto textureLoader =
-    makeTextureResourceLoader(texturePath, name, materialConfig.extensions, fs, palette);
+  const auto isBmat = kdl::path_has_extension(kdl::path_to_lower(texturePath), ".bmat");
+  auto textureLoader = isBmat
+                         ? makeBmatTextureResourceLoader(texturePath, fs)
+                         : makeTextureResourceLoader(
+                             texturePath, name, materialConfig.extensions, fs, palette);
   auto textureResource = createResource(std::move(textureLoader));
 
   // For the classic id-tech miptex formats, the `{`-prefixed fence-texture naming
@@ -311,6 +330,30 @@ Result<gl::Material> loadTextureMaterial(
   if (isMasked)
   {
     material.setAlphaFunc(gl::MaterialAlphaFunc::Compare::GreaterEqual, 0.5f);
+  }
+  else if (isBmat)
+  {
+    // Alpha mode is manifest metadata, so read it eagerly while leaving the texture
+    // resource lazy.
+    const auto alphaModeResult =
+      fs.openFile(texturePath) | kdl::and_then([](auto file) {
+        auto reader = file->reader();
+        return loadBmatAlphaMode(reader);
+      })
+      | kdl::transform([&](const auto alphaMode) {
+          switch (alphaMode)
+          {
+          case BmatAlphaMode::Opaque:
+            break;
+          case BmatAlphaMode::Mask:
+            material.setAlphaFunc(gl::MaterialAlphaFunc::Compare::GreaterEqual, 0.5f);
+            break;
+          case BmatAlphaMode::Blend:
+            material.setBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            break;
+          }
+        });
+    static_cast<void>(alphaModeResult);
   }
   return material;
 }
