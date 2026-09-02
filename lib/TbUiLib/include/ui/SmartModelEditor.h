@@ -10,7 +10,7 @@
 
  TrenchBroom is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  GNU General Public License for more details.
 
  You should have received a copy of the GNU General Public License
@@ -19,36 +19,31 @@
 
 #pragma once
 
-#include "ui/TabBook.h"
+#include "ui/SmartPropertyEditor.h"
 
-class QSplitter;
+class QLineEdit;
 
 namespace tb::ui
 {
 class AppController;
-class EntityBrowser;
-class EntityPropertyEditor;
 class MapDocument;
 
-class EntityInspector : public TabBookPage
+class SmartModelEditor : public SmartPropertyEditor
 {
   Q_OBJECT
 private:
-  QSplitter* m_splitter = nullptr;
-  EntityPropertyEditor* m_attributeEditor = nullptr;
-  EntityBrowser* m_entityBrowser = nullptr;
+  AppController& m_appController;
+  QLineEdit* m_pathEditor = nullptr;
+  bool m_updating = false;
 
 public:
-  EntityInspector(
+  SmartModelEditor(
     AppController& appController, MapDocument& document, QWidget* parent = nullptr);
-  ~EntityInspector() override;
 
 private:
-  void createGui(AppController& appController, MapDocument& document);
-  QWidget* createEntityPropertyEditor(
-    AppController& appController, MapDocument& document, QWidget* parent);
-  QWidget* createEntityBrowser(
-    AppController& appController, MapDocument& document, QWidget* parent);
+  void createGui();
+  void chooseModel();
+  void commitPath();
+  void doUpdateVisual(const std::vector<mdl::EntityNodeBase*>& nodes) override;
 };
-
 } // namespace tb::ui

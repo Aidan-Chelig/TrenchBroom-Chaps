@@ -97,6 +97,7 @@ public:
 
   const EntityModelFrame* frame(const ModelSpecification& spec) const;
   const EntityModel* model(const std::filesystem::path& path) const;
+  Result<std::vector<std::filesystem::path>> findModelPaths() const;
 
   const std::vector<const EntityModel*> findEntityModelsByTextureResourceId(
     const std::vector<gl::ResourceId>& resourceIds) const;

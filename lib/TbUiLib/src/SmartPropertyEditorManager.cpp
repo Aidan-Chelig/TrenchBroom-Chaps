@@ -32,6 +32,7 @@
 #include "ui/SmartColorEditor.h"
 #include "ui/SmartDefaultPropertyEditor.h"
 #include "ui/SmartFlagsEditor.h"
+#include "ui/SmartModelEditor.h"
 #include "ui/SmartPropertyEditor.h"
 #include "ui/SmartWadEditor.h"
 
@@ -86,14 +87,14 @@ SmartPropertyEditorMatcher makeSmartPropertyEditorKeyMatcher(
 } // namespace
 
 SmartPropertyEditorManager::SmartPropertyEditorManager(
-  MapDocument& document, QWidget* parent)
+  AppController& appController, MapDocument& document, QWidget* parent)
   : QWidget{parent}
   , m_document{document}
   , m_stackedLayout{new QStackedLayout{this}}
 {
   setLayout(m_stackedLayout);
 
-  createEditors();
+  createEditors(appController);
   activateEditor(defaultEditor(), "");
   connectObservers();
 }
@@ -116,7 +117,7 @@ bool SmartPropertyEditorManager::isDefaultEditorActive() const
   return activeEditor() == defaultEditor();
 }
 
-void SmartPropertyEditorManager::createEditors()
+void SmartPropertyEditorManager::createEditors(AppController& appController)
 {
   contract_pre(m_editors.empty());
 
@@ -126,6 +127,9 @@ void SmartPropertyEditorManager::createEditors()
   registerEditor(
     makeSmartTypeWithSameDefinitionEditorMatcher<mdl::PropertyValueTypes::Choice>(),
     new SmartChoiceEditor{m_document, this});
+  registerEditor(
+    makeSmartTypeEditorMatcher<mdl::PropertyValueTypes::ModelPath>(),
+    new SmartModelEditor{appController, m_document, this});
   registerEditor(
     [&](const auto& propertyKey, const auto& nodes) {
       return nodes.size() == 1

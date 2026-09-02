@@ -51,6 +51,13 @@ struct String
   kdl_reflect_decl(String, defaultValue);
 };
 
+struct ModelPath
+{
+  std::optional<std::string> defaultValue = std::nullopt;
+
+  kdl_reflect_decl(ModelPath, defaultValue);
+};
+
 struct Boolean
 {
   std::optional<bool> defaultValue = std::nullopt;
@@ -164,6 +171,7 @@ using PropertyValueType = std::variant<
   PropertyValueTypes::LinkTarget,
   PropertyValueTypes::LinkSource,
   PropertyValueTypes::String,
+  PropertyValueTypes::ModelPath,
   PropertyValueTypes::Boolean,
   PropertyValueTypes::Integer,
   PropertyValueTypes::Float,

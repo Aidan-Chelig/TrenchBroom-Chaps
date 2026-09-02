@@ -135,6 +135,8 @@ private:
     ParserStatus& status, std::string propertyKey);
   PropertyDefinition parseStringPropertyDefinition(
     ParserStatus& status, std::string propertyKey);
+  PropertyDefinition parseModelPathPropertyDefinition(
+    ParserStatus& status, std::string propertyKey);
   PropertyDefinition parseIntegerPropertyDefinition(
     ParserStatus& status, std::string propertyKey);
   PropertyDefinition parseFloatPropertyDefinition(

@@ -626,6 +626,10 @@ PropertyDefinition FgdParser::parsePropertyDefinition(ParserStatus& status)
   {
     return parseStringPropertyDefinition(status, std::move(propertyKey));
   }
+  if (kdl::ci::str_is_equal(typeName, "modelpath"))
+  {
+    return parseModelPathPropertyDefinition(status, std::move(propertyKey));
+  }
   if (kdl::ci::str_is_equal(typeName, "integer"))
   {
     return parseIntegerPropertyDefinition(status, std::move(propertyKey));
@@ -704,6 +708,21 @@ PropertyDefinition FgdParser::parseStringPropertyDefinition(
   return {
     std::move(propertyKey),
     PropertyValueTypes::String{std::move(defaultValue)},
+    std::move(shortDescription),
+    std::move(longDescription),
+    readOnly};
+}
+
+PropertyDefinition FgdParser::parseModelPathPropertyDefinition(
+  ParserStatus& status, std::string propertyKey)
+{
+  const auto readOnly = parseReadOnlyFlag(status);
+  auto shortDescription = parsePropertyDescription();
+  auto defaultValue = parseDefaultStringValue(status);
+  auto longDescription = parsePropertyDescription();
+  return {
+    std::move(propertyKey),
+    PropertyValueTypes::ModelPath{std::move(defaultValue)},
     std::move(shortDescription),
     std::move(longDescription),
     readOnly};
@@ -815,8 +834,9 @@ PropertyDefinition FgdParser::parseFlagsPropertyDefinition(std::string propertyK
       token = m_tokenizer.nextToken(FgdToken::Integer | FgdToken::CBracket);
     }
 
-    flags.push_back(PropertyValueTypes::Flag{
-      value, std::move(shortDescription), std::move(longDescription)});
+    flags.push_back(
+      PropertyValueTypes::Flag{
+        value, std::move(shortDescription), std::move(longDescription)});
   }
 
   return {

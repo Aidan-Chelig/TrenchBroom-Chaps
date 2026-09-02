@@ -116,6 +116,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MaterialCollectionEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MiniToolBarLayout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ModEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ModelBrowserView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MousePreferencePane.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MultiCompletionLineEdit.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MultiPaneMapView.cpp
@@ -150,6 +151,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartColorEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartDefaultPropertyEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartFlagsEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartModelEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartPropertyEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartPropertyEditorManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartWadEditor.cpp
@@ -301,6 +303,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/MaterialCollectionEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/MiniToolBarLayout.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ModEditor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ModelBrowserView.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/MousePreferencePane.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/MultiCompletionLineEdit.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/MultiPaneMapView.h
@@ -336,6 +339,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartColorEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartDefaultPropertyEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartFlagsEditor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartModelEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartPropertyEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartPropertyEditorManager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartWadEditor.h

@@ -273,6 +273,13 @@ auto withDefaultValue(
         }
         return stringValueType;
       },
+      [&](PropertyValueTypes::ModelPath modelPathValueType) -> PropertyValueType {
+        if (hasAttribute(element, "value"))
+        {
+          modelPathValueType.defaultValue = parseString(element, "value");
+        }
+        return modelPathValueType;
+      },
       [&](PropertyValueTypes::Boolean booleanValueType) -> PropertyValueType {
         if (hasAttribute(element, "value"))
         {

@@ -38,6 +38,7 @@ struct PropertyDefinition;
 
 namespace ui
 {
+class AppController;
 class EntityPropertyGrid;
 class MapDocument;
 class SmartPropertyEditorManager;
@@ -60,7 +61,8 @@ private:
   NotifierConnection m_notifierConnection;
 
 public:
-  explicit EntityPropertyEditor(MapDocument& document, QWidget* parent = nullptr);
+  EntityPropertyEditor(
+    AppController& appController, MapDocument& document, QWidget* parent = nullptr);
   ~EntityPropertyEditor() override;
 
 private:
@@ -78,7 +80,7 @@ private:
   static QString optionDescriptions(const mdl::PropertyDefinition& definition);
 
   void updateDocumentation(const std::string& propertyKey);
-  void createGui();
+  void createGui(AppController& appController);
 
   void updateMinimumSize();
 };

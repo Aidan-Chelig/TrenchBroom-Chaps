@@ -647,6 +647,35 @@ TEST_CASE("FgdParser")
         });
     }
 
+    SECTION("parseModelPathPropertyDefinition")
+    {
+      const auto file = R"(
+      @PointClass = prop_model : "Model prop"
+      [
+         model(modelpath) : "Model" : "props/chair.glb" : "Asset-relative GLB path"
+      ])";
+
+      auto parser = FgdParser{file, RgbaF{1.0f, 1.0f, 1.0f, 1.0f}};
+      auto status = TestParserStatus{};
+
+      CHECK(
+        parser.parseDefinitions(status)
+        == std::vector<mdl::EntityDefinition>{
+          {
+            "prop_model",
+            RgbaF{1.0f, 1.0f, 1.0f, 1.0f},
+            "Model prop",
+            {
+              {"model",
+               mdl::PropertyValueTypes::ModelPath{"props/chair.glb"},
+               "Model",
+               "Asset-relative GLB path"},
+            },
+            mdl::PointEntityDefinition{{{-8, -8, -8}, {8, 8, 8}}, {}, {}},
+          },
+        });
+    }
+
     /**
      * Support having an integer (or decimal) as a default for a string
      * propertyDefinition. Technically a type mismatch, but appears in the wild; see:
@@ -945,37 +974,38 @@ TEST_CASE("FgdParser")
 
       using T = std::tuple<std::string, mdl::PropertyDefinition>;
 
-      const auto [str, expectedPropertyDefinition] = GENERATE(values<T>({
-        {R"(test1(color1) : "Property 1" : "1.0 0.5 0.0" : "Longer description 1")",
-         {"test1",
-          mdl::PropertyValueTypes::Color<RgbF>{"1.0 0.5 0.0"},
-          "Property 1",
-          "Longer description 1"}},
+      const auto [str, expectedPropertyDefinition] = GENERATE(
+        values<T>({
+          {R"(test1(color1) : "Property 1" : "1.0 0.5 0.0" : "Longer description 1")",
+           {"test1",
+            mdl::PropertyValueTypes::Color<RgbF>{"1.0 0.5 0.0"},
+            "Property 1",
+            "Longer description 1"}},
 
-        {R"(test2(color255) : "Property 2" : "255 127 0" : "Longer description 2")",
-         {"test2",
-          mdl::PropertyValueTypes::Color<RgbB>{"255 127 0"},
-          "Property 2",
-          "Longer description 2"}},
+          {R"(test2(color255) : "Property 2" : "255 127 0" : "Longer description 2")",
+           {"test2",
+            mdl::PropertyValueTypes::Color<RgbB>{"255 127 0"},
+            "Property 2",
+            "Longer description 2"}},
 
-        {R"(test3(color1) : "Property 3" : "0.2 0.3 0.4 1000" : "Longer description 3")",
-         {"test3",
-          mdl::PropertyValueTypes::Color<RgbF>{"0.2 0.3 0.4 1000"},
-          "Property 3",
-          "Longer description 3"}},
+          {R"(test3(color1) : "Property 3" : "0.2 0.3 0.4 1000" : "Longer description 3")",
+           {"test3",
+            mdl::PropertyValueTypes::Color<RgbF>{"0.2 0.3 0.4 1000"},
+            "Property 3",
+            "Longer description 3"}},
 
-        {R"(test4(color255) : "Property 4" : "10 20 30 1000" : "Longer description 4")",
-         {"test4",
-          mdl::PropertyValueTypes::Color<RgbB>{"10 20 30 1000"},
-          "Property 4",
-          "Longer description 4"}},
+          {R"(test4(color255) : "Property 4" : "10 20 30 1000" : "Longer description 4")",
+           {"test4",
+            mdl::PropertyValueTypes::Color<RgbB>{"10 20 30 1000"},
+            "Property 4",
+            "Longer description 4"}},
 
-        {R"(test5(color255) : "Property 5" : : "Longer description 5")",
-         {"test5",
-          mdl::PropertyValueTypes::Color<RgbB>{},
-          "Property 5",
-          "Longer description 5"}},
-      }));
+          {R"(test5(color255) : "Property 5" : : "Longer description 5")",
+           {"test5",
+            mdl::PropertyValueTypes::Color<RgbB>{},
+            "Property 5",
+            "Longer description 5"}},
+        }));
 
       CAPTURE(str);
 
@@ -1214,11 +1244,12 @@ TEST_CASE("FgdParser")
                 el::cs(
                   el::eq(el::var("startonground"), el::lit("1")),
                   el::lit(el::MapType{{"path", el::Value{":progs/polyp.mdl"}}})),
-                el::lit(el::MapType{
-                  {"path", el::Value{":progs/polyp.mdl"}},
-                  {"frame", el::Value{153}},
-                  {"skin", el::Value{0}},
-                }),
+                el::lit(
+                  el::MapType{
+                    {"path", el::Value{":progs/polyp.mdl"}},
+                    {"frame", el::Value{153}},
+                    {"skin", el::Value{0}},
+                  }),
               })},
               {}},
           },
@@ -1380,10 +1411,12 @@ TEST_CASE("FgdParser")
       auto defs = parser.parseDefinitions(status);
       REQUIRE(defs);
       CHECK(defs.value().size() == 2u);
-      CHECK(std::ranges::any_of(
-        defs.value(), [](const auto& def) { return def.name == "worldspawn"; }));
-      CHECK(std::ranges::any_of(
-        defs.value(), [](const auto& def) { return def.name == "info_player_start"; }));
+      CHECK(std::ranges::any_of(defs.value(), [](const auto& def) {
+        return def.name == "worldspawn";
+      }));
+      CHECK(std::ranges::any_of(defs.value(), [](const auto& def) {
+        return def.name == "info_player_start";
+      }));
     }
 
     SECTION("parseNestedInclude")
@@ -1399,12 +1432,15 @@ TEST_CASE("FgdParser")
       auto defs = parser.parseDefinitions(status);
       REQUIRE(defs);
       CHECK(defs.value().size() == 3u);
-      CHECK(std::ranges::any_of(
-        defs.value(), [](const auto& def) { return def.name == "worldspawn"; }));
-      CHECK(std::ranges::any_of(
-        defs.value(), [](const auto& def) { return def.name == "info_player_start"; }));
-      CHECK(std::ranges::any_of(
-        defs.value(), [](const auto& def) { return def.name == "info_player_coop"; }));
+      CHECK(std::ranges::any_of(defs.value(), [](const auto& def) {
+        return def.name == "worldspawn";
+      }));
+      CHECK(std::ranges::any_of(defs.value(), [](const auto& def) {
+        return def.name == "info_player_start";
+      }));
+      CHECK(std::ranges::any_of(defs.value(), [](const auto& def) {
+        return def.name == "info_player_coop";
+      }));
     }
 
     SECTION("parseRecursiveInclude")
@@ -1420,8 +1456,9 @@ TEST_CASE("FgdParser")
       auto defs = parser.parseDefinitions(status);
       REQUIRE(defs);
       CHECK(defs.value().size() == 1u);
-      CHECK(std::ranges::any_of(
-        defs.value(), [](const auto& def) { return def.name == "worldspawn"; }));
+      CHECK(std::ranges::any_of(defs.value(), [](const auto& def) {
+        return def.name == "worldspawn";
+      }));
     }
 
     SECTION("parseIncludeEscapingBasePath")
@@ -1440,10 +1477,12 @@ TEST_CASE("FgdParser")
       auto defs = parser.parseDefinitions(status);
       REQUIRE(defs);
       CHECK(defs.value().size() == 1u);
-      CHECK(std::ranges::any_of(
-        defs.value(), [](const auto& def) { return def.name == "worldspawn"; }));
-      CHECK(std::ranges::none_of(
-        defs.value(), [](const auto& def) { return def.name == "info_player_start"; }));
+      CHECK(std::ranges::any_of(defs.value(), [](const auto& def) {
+        return def.name == "worldspawn";
+      }));
+      CHECK(std::ranges::none_of(defs.value(), [](const auto& def) {
+        return def.name == "info_player_start";
+      }));
     }
   }
 

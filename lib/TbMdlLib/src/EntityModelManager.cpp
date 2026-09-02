@@ -20,6 +20,9 @@
 #include "mdl/EntityModelManager.h"
 
 #include "base/Logger.h"
+#include "fs/FileSystem.h"
+#include "fs/PathMatcher.h"
+#include "fs/TraversalMode.h"
 #include "gl/CreateResource.h"
 #include "gl/MaterialIndexRangeRenderer.h"
 #include "mdl/EntityModel.h"
@@ -52,6 +55,12 @@ EntityModelManager::EntityModelManager(
 EntityModelManager::~EntityModelManager()
 {
   clear();
+}
+
+Result<std::vector<std::filesystem::path>> EntityModelManager::findModelPaths() const
+{
+  return m_gameFileSystem.find(
+    "", fs::TraversalMode::Recursive, fs::makeExtensionPathMatcher({".glb"}));
 }
 
 void EntityModelManager::clear()
