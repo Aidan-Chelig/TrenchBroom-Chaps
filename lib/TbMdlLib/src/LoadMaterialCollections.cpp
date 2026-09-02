@@ -335,25 +335,24 @@ Result<gl::Material> loadTextureMaterial(
   {
     // Alpha mode is manifest metadata, so read it eagerly while leaving the texture
     // resource lazy.
-    const auto alphaModeResult =
-      fs.openFile(texturePath) | kdl::and_then([](auto file) {
-        auto reader = file->reader();
-        return loadBmatAlphaMode(reader);
-      })
-      | kdl::transform([&](const auto alphaMode) {
-          switch (alphaMode)
-          {
-          case BmatAlphaMode::Opaque:
-            break;
-          case BmatAlphaMode::Mask:
-            material.setAlphaFunc(gl::MaterialAlphaFunc::Compare::GreaterEqual, 0.5f);
-            break;
-          case BmatAlphaMode::Blend:
-            material.setBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            break;
-          }
-        });
-    static_cast<void>(alphaModeResult);
+    const auto alphaModeResult = fs.openFile(texturePath) | kdl::and_then([](auto file) {
+                                   auto reader = file->reader();
+                                   return loadBmatAlphaMode(reader);
+                                 });
+    if (alphaModeResult.is_success())
+    {
+      switch (alphaModeResult.value())
+      {
+      case BmatAlphaMode::Opaque:
+        break;
+      case BmatAlphaMode::Mask:
+        material.setAlphaFunc(gl::MaterialAlphaFunc::Compare::GreaterEqual, 0.5f);
+        break;
+      case BmatAlphaMode::Blend:
+        material.setBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        break;
+      }
+    }
   }
   return material;
 }
