@@ -265,6 +265,7 @@ QString ModelBrowserView::tooltip(const Cell& cell)
 void ModelBrowserView::resourcesWereProcessed(const std::vector<gl::ResourceId>&)
 {
   invalidate();
+  update();
 }
 
 const ModelCellData& ModelBrowserView::cellData(const Cell& cell) const
