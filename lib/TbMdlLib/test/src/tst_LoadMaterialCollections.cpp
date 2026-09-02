@@ -185,6 +185,13 @@ TEST_CASE("LoadMaterialCollections")
       REQUIRE(material.texture());
       CHECK(material.texture()->width() == 256u);
       CHECK(material.texture()->height() == 256u);
+      const auto& buffers = material.texture()->buffersIfLoaded();
+      REQUIRE(buffers.size() == 1u);
+      REQUIRE(buffers.front().size() >= 4u);
+      CHECK(buffers.front().data()[0] == 36u);
+      CHECK(buffers.front().data()[1] == 30u);
+      CHECK(buffers.front().data()[2] == 19u);
+      CHECK(buffers.front().data()[3] == 255u);
       CHECK(
         material.effectiveAlphaFunc()
         == gl::MaterialAlphaFunc{gl::MaterialAlphaFunc::Compare::GreaterEqual, 0.5f});

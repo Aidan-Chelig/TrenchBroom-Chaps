@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <span>
@@ -45,6 +46,14 @@ uint32_t readU32(const std::span<const uint8_t> bytes, const size_t offset)
 uint64_t readU64(const std::span<const uint8_t> bytes, const size_t offset)
 {
   return uint64_t(readU32(bytes, offset)) | uint64_t(readU32(bytes, offset + 4u)) << 32u;
+}
+
+uint8_t srgbToLinear(const uint8_t value)
+{
+  const auto encoded = float(value) / 255.0f;
+  const auto linear =
+    encoded <= 0.04045f ? encoded / 12.92f : std::pow((encoded + 0.055f) / 1.055f, 2.4f);
+  return static_cast<uint8_t>(std::clamp(std::lround(linear * 255.0f), 0l, 255l));
 }
 
 Result<size_t> readTarSize(const std::span<const uint8_t> bytes)
@@ -183,6 +192,7 @@ Result<gl::Texture> decodeKtx2(const std::span<const uint8_t> bytes)
   }
 
   const auto vkFormat = readU32(bytes, 12u);
+  const auto srgb = vkFormat == 29u || vkFormat == 43u;
   const auto width = size_t{readU32(bytes, 20u)};
   const auto height = size_t{readU32(bytes, 24u)};
   const auto depth = readU32(bytes, 28u);
@@ -237,9 +247,12 @@ Result<gl::Texture> decodeKtx2(const std::span<const uint8_t> bytes)
   auto alphaDomain = img::ImageAlphaDomain::Opaque;
   for (auto i = size_t{0}; i < pixelCount; ++i)
   {
-    output[i * 4u] = input[i * channels];
-    output[i * 4u + 1u] = channels == 1u ? input[i * channels] : input[i * channels + 1u];
-    output[i * 4u + 2u] = channels == 1u ? input[i * channels] : input[i * channels + 2u];
+    const auto red = input[i * channels];
+    const auto green = channels == 1u ? red : input[i * channels + 1u];
+    const auto blue = channels == 1u ? red : input[i * channels + 2u];
+    output[i * 4u] = srgb ? srgbToLinear(red) : red;
+    output[i * 4u + 1u] = srgb ? srgbToLinear(green) : green;
+    output[i * 4u + 2u] = srgb ? srgbToLinear(blue) : blue;
     output[i * 4u + 3u] = channels == 4u ? input[i * channels + 3u] : uint8_t{255};
     const auto alpha = output[i * 4u + 3u];
     if (alpha > 0u && alpha < 255u)
