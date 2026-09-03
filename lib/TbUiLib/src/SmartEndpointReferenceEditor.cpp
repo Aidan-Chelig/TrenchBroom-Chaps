@@ -7,6 +7,7 @@
 #include <QVBoxLayout>
 
 #include "mdl/EntityDefinition.h"
+#include "mdl/EntityDefinitionUtils.h"
 #include "mdl/EntityNode.h"
 #include "mdl/EntityProperties.h"
 #include "mdl/Map.h"
@@ -83,9 +84,13 @@ void SmartEndpointReferenceEditor::doUpdateVisual(
       {
         continue;
       }
-      const auto* name =
-        entityNode->entity().property(mdl::EntityPropertyKeys::Targetname);
-      if (!name || *name != targetname)
+      const auto nameMatches = std::ranges::any_of(
+        mdl::getLinkTargetPropertyDefinitions(entityNode->entity().definition()),
+        [&](const auto* linkTargetDefinition) {
+          const auto* name = entityNode->entity().property(linkTargetDefinition->key);
+          return name && *name == targetname;
+        });
+      if (!nameMatches)
       {
         continue;
       }

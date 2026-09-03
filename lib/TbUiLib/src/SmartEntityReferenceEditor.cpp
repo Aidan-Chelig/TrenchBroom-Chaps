@@ -10,6 +10,7 @@
 #include <QVBoxLayout>
 
 #include "mdl/EntityDefinition.h"
+#include "mdl/EntityDefinitionUtils.h"
 #include "mdl/EntityNode.h"
 #include "mdl/EntityProperties.h"
 #include "mdl/Map.h"
@@ -28,15 +29,22 @@ namespace tb::ui
 {
 namespace
 {
-std::vector<mdl::EntityNode*> namedEntities(mdl::Map& map)
+std::vector<std::pair<mdl::EntityNode*, std::string_view>> namedEntities(mdl::Map& map)
 {
-  auto result = std::vector<mdl::EntityNode*>{};
+  auto result = std::vector<std::pair<mdl::EntityNode*, std::string_view>>{};
   for (auto* node : mdl::collectDescendants(std::vector<mdl::Node*>{&map.worldNode()}))
   {
-    if (auto* entityNode = dynamic_cast<mdl::EntityNode*>(node);
-        entityNode && entityNode->entity().property(mdl::EntityPropertyKeys::Targetname))
+    if (auto* entityNode = dynamic_cast<mdl::EntityNode*>(node))
     {
-      result.push_back(entityNode);
+      for (const auto* propertyDefinition :
+           mdl::getLinkTargetPropertyDefinitions(entityNode->entity().definition()))
+      {
+        if (const auto* name = entityNode->entity().property(propertyDefinition->key);
+            name && !name->empty())
+        {
+          result.emplace_back(entityNode, *name);
+        }
+      }
     }
   }
   return result;
@@ -102,9 +110,9 @@ void SmartEntityReferenceEditor::jumpToEntity()
     index >= 0 ? m_entities->itemData(index).toString() : m_entities->currentText();
   const auto value = mapStringFromUnicode(map.encoding(), text);
   auto matches = std::vector<mdl::Node*>{};
-  for (auto* node : namedEntities(map))
+  for (const auto& [node, name] : namedEntities(map))
   {
-    if (*node->entity().property(mdl::EntityPropertyKeys::Targetname) == value)
+    if (name == value)
     {
       matches.push_back(node);
     }
@@ -130,7 +138,7 @@ void SmartEntityReferenceEditor::doUpdateVisual(
 
   m_entities->clear();
   auto matchCount = 0u;
-  for (const auto* node : namedEntities(map))
+  for (const auto& [node, targetname] : namedEntities(map))
   {
     const auto* definition = node->entity().definition();
     if (
@@ -141,15 +149,14 @@ void SmartEntityReferenceEditor::doUpdateVisual(
     {
       continue;
     }
-    const auto& targetname =
-      *node->entity().property(mdl::EntityPropertyKeys::Targetname);
     if (targetname == current)
     {
       ++matchCount;
     }
     m_entities->addItem(
-      mapStringToUnicode(map.encoding(), targetname + " — " + node->entity().classname()),
-      mapStringToUnicode(map.encoding(), targetname));
+      mapStringToUnicode(
+        map.encoding(), std::string{targetname} + " — " + node->entity().classname()),
+      mapStringToUnicode(map.encoding(), std::string{targetname}));
   }
 
   const auto currentText = mapStringToUnicode(map.encoding(), current);

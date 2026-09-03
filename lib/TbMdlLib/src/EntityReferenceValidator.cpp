@@ -2,6 +2,7 @@
 #include "mdl/EntityReferenceValidator.h"
 
 #include "mdl/EntityDefinition.h"
+#include "mdl/EntityDefinitionUtils.h"
 #include "mdl/EntityNode.h"
 #include "mdl/EntityProperties.h"
 #include "mdl/Issue.h"
@@ -24,9 +25,13 @@ std::vector<const EntityNode*> findTargets(Map& map, const std::string_view name
   {
     if (const auto* entityNode = dynamic_cast<const EntityNode*>(node))
     {
-      const auto* targetname =
-        entityNode->entity().property(EntityPropertyKeys::Targetname);
-      if (targetname && *targetname == name)
+      const auto nameMatches = std::ranges::any_of(
+        getLinkTargetPropertyDefinitions(entityNode->entity().definition()),
+        [&](const auto* propertyDefinition) {
+          const auto* targetname = entityNode->entity().property(propertyDefinition->key);
+          return targetname && *targetname == name;
+        });
+      if (nameMatches)
       {
         result.push_back(entityNode);
       }
