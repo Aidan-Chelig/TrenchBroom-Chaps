@@ -39,6 +39,7 @@
 #include "mdl/EntityDefinitionManager.h"
 #include "mdl/EntityDefinitionUtils.h"
 #include "mdl/EntityLinkManager.h"
+#include "mdl/EntityReferenceValidator.h"
 #include "mdl/EntityModelManager.h"
 #include "mdl/EntityNode.h"
 #include "mdl/EnvironmentConfig.h"
@@ -1127,6 +1128,7 @@ void Map::registerValidators()
     std::make_unique<LinkSourceValidator>(*m_entityLinkManager));
   m_worldNode->registerValidator(
     std::make_unique<LinkTargetValidator>(*m_entityLinkManager));
+  m_worldNode->registerValidator(std::make_unique<EntityReferenceValidator>(*this));
   m_worldNode->registerValidator(std::make_unique<NonIntegerVerticesValidator>());
   m_worldNode->registerValidator(std::make_unique<MixedBrushContentsValidator>());
   m_worldNode->registerValidator(std::make_unique<WorldBoundsValidator>(worldBounds()));

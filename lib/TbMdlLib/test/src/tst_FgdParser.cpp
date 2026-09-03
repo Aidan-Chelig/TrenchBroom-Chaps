@@ -41,6 +41,43 @@ namespace tb::mdl
 
 TEST_CASE("FgdParser")
 {
+  SECTION("interfaces and references")
+  {
+    const auto file = R"(
+      @BaseClass = Interactive [
+        interface(actions) : "Actions" = [
+          use : "Use"
+          enable : "Enable"
+        ]
+      ]
+      @PointClass base(Interactive) = logic_signal_action [
+        target(entity_ref, requires_interface="actions") : "Target"
+        action(endpoint_ref, entity_property="target", interface="actions") : "Action"
+      ]
+    )";
+    auto parser = FgdParser{file, RgbaF{1.0f, 1.0f, 1.0f, 1.0f}};
+    auto status = TestParserStatus{};
+
+    const auto definitions = parser.parseDefinitions(status) | kdl::value();
+    REQUIRE(definitions.size() == 1u);
+    REQUIRE(definitions.front().interfaces.size() == 1u);
+    CHECK(definitions.front().interfaces.front().name == "actions");
+    CHECK(definitions.front().interfaces.front().endpoints.size() == 2u);
+
+    const auto* target = getPropertyDefinition(definitions.front(), "target");
+    REQUIRE(target != nullptr);
+    const auto& targetReference =
+      std::get<PropertyValueTypes::EntityReference>(target->valueType);
+    CHECK(targetReference.requiredInterface == "actions");
+
+    const auto* action = getPropertyDefinition(definitions.front(), "action");
+    REQUIRE(action != nullptr);
+    const auto& endpointReference =
+      std::get<PropertyValueTypes::EndpointReference>(action->valueType);
+    CHECK(endpointReference.entityProperty == "target");
+    CHECK(endpointReference.interfaceName == "actions");
+  }
+
   SECTION("Included files")
   {
     const auto basePath = getFixtureRoot() / "games/";

@@ -39,8 +39,10 @@ target_sources(TbMdlLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityDefinitionGroup.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityDefinitionManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityDefinitionParser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityInterfaceDefinition.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityDefinitionUtils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityLinkManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityReferenceValidator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityModel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityModelDataResource.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityModelManager.cpp

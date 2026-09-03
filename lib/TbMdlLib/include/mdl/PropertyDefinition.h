@@ -58,6 +58,23 @@ struct ModelPath
   kdl_reflect_decl(ModelPath, defaultValue);
 };
 
+struct EntityReference
+{
+  std::optional<std::string> defaultValue = std::nullopt;
+  std::optional<std::string> requiredInterface = std::nullopt;
+
+  kdl_reflect_decl(EntityReference, defaultValue, requiredInterface);
+};
+
+struct EndpointReference
+{
+  std::optional<std::string> defaultValue = std::nullopt;
+  std::string entityProperty;
+  std::string interfaceName;
+
+  kdl_reflect_decl(EndpointReference, defaultValue, entityProperty, interfaceName);
+};
+
 struct Boolean
 {
   std::optional<bool> defaultValue = std::nullopt;
@@ -172,6 +189,8 @@ using PropertyValueType = std::variant<
   PropertyValueTypes::LinkSource,
   PropertyValueTypes::String,
   PropertyValueTypes::ModelPath,
+  PropertyValueTypes::EntityReference,
+  PropertyValueTypes::EndpointReference,
   PropertyValueTypes::Boolean,
   PropertyValueTypes::Integer,
   PropertyValueTypes::Float,

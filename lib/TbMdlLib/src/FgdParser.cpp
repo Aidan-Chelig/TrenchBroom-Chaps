@@ -439,7 +439,7 @@ EntityDefinitionClassInfo FgdParser::parseClassInfo(
     classInfo.description = kdl::str_trim(parseString());
   }
 
-  classInfo.propertyDefinitions = parsePropertyDefinitions(status);
+  classInfo.propertyDefinitions = parsePropertyDefinitions(status, classInfo.interfaces);
 
   return classInfo;
 }
@@ -556,7 +556,8 @@ void FgdParser::skipClassProperty(ParserStatus& /* status */)
   } while (depth > 0 && token.type() != FgdToken::Eof);
 }
 
-std::vector<PropertyDefinition> FgdParser::parsePropertyDefinitions(ParserStatus& status)
+std::vector<PropertyDefinition> FgdParser::parsePropertyDefinitions(
+  ParserStatus& status, std::vector<EntityInterfaceDefinition>& interfaces)
 {
   auto propertyDefinitions = std::vector<PropertyDefinition>{};
 
@@ -566,6 +567,26 @@ std::vector<PropertyDefinition> FgdParser::parsePropertyDefinitions(ParserStatus
 
   while (token.type() != FgdToken::CBracket)
   {
+    if (kdl::ci::str_is_equal(token.data(), "interface"))
+    {
+      auto interfaceDefinition = parseInterfaceDefinition(status);
+      const auto location = token.location();
+      if (getEntityInterfaceDefinition(interfaces, interfaceDefinition.name))
+      {
+        status.warn(
+          location,
+          fmt::format(
+            "Skipping duplicate interface definition: '{}'", interfaceDefinition.name));
+      }
+      else
+      {
+        interfaces.push_back(std::move(interfaceDefinition));
+      }
+      token =
+        m_tokenizer.peekToken(FgdToken::Word | FgdToken::Integer | FgdToken::CBracket);
+      continue;
+    }
+
     const auto propertyKey = token.data();
     const auto location = token.location();
 
@@ -583,6 +604,72 @@ std::vector<PropertyDefinition> FgdParser::parsePropertyDefinitions(ParserStatus
   m_tokenizer.nextToken(FgdToken::CBracket);
 
   return propertyDefinitions;
+}
+
+EntityInterfaceDefinition FgdParser::parseInterfaceDefinition(ParserStatus& status)
+{
+  m_tokenizer.nextToken(FgdToken::Word);
+  m_tokenizer.nextToken(FgdToken::OParenthesis);
+  auto name = m_tokenizer.nextToken(FgdToken::Word).data();
+  m_tokenizer.nextToken(FgdToken::CParenthesis);
+
+  auto displayName = std::optional<std::string>{};
+  auto description = std::optional<std::string>{};
+  if (m_tokenizer.peekToken(FgdToken::Colon | FgdToken::Equality)
+        .hasType(FgdToken::Colon))
+  {
+    m_tokenizer.nextToken();
+    displayName = parseString();
+    if (m_tokenizer.peekToken(FgdToken::Colon | FgdToken::Equality)
+          .hasType(FgdToken::Colon))
+    {
+      m_tokenizer.nextToken();
+      description = parseString();
+    }
+  }
+
+  m_tokenizer.nextToken(FgdToken::Equality);
+  m_tokenizer.nextToken(FgdToken::OBracket);
+  auto endpoints = std::vector<EntityInterfaceEndpointDefinition>{};
+  auto token = m_tokenizer.peekToken(FgdToken::Word | FgdToken::CBracket);
+  while (!token.hasType(FgdToken::CBracket))
+  {
+    const auto location = token.location();
+    auto endpoint = EntityInterfaceEndpointDefinition{
+      m_tokenizer.nextToken().data(), std::nullopt, std::nullopt};
+    if (m_tokenizer.peekToken(FgdToken::Colon | FgdToken::Word | FgdToken::CBracket)
+          .hasType(FgdToken::Colon))
+    {
+      m_tokenizer.nextToken();
+      endpoint.displayName = parseString();
+      if (m_tokenizer.peekToken(FgdToken::Colon | FgdToken::Word | FgdToken::CBracket)
+            .hasType(FgdToken::Colon))
+      {
+        m_tokenizer.nextToken();
+        endpoint.description = parseString();
+      }
+    }
+    if (
+      std::ranges::find(
+        endpoints, endpoint.name, &EntityInterfaceEndpointDefinition::name)
+      != endpoints.end())
+    {
+      status.warn(
+        location,
+        fmt::format("Skipping duplicate endpoint definition: '{}'", endpoint.name));
+    }
+    else
+    {
+      endpoints.push_back(std::move(endpoint));
+    }
+    token = m_tokenizer.peekToken(FgdToken::Word | FgdToken::CBracket);
+  }
+  m_tokenizer.nextToken(FgdToken::CBracket);
+  return {
+    std::move(name),
+    std::move(displayName),
+    std::move(description),
+    std::move(endpoints)};
 }
 
 PropertyDefinition FgdParser::parsePropertyDefinition(ParserStatus& status)
@@ -612,7 +699,16 @@ PropertyDefinition FgdParser::parsePropertyDefinition(ParserStatus& status)
   m_tokenizer.nextToken(FgdToken::OParenthesis);
   token = m_tokenizer.nextToken(FgdToken::Word);
   const auto typeName = token.data();
-  m_tokenizer.nextToken(FgdToken::CParenthesis);
+  auto parameters = std::unordered_map<std::string, std::string>{};
+  token = m_tokenizer.nextToken(FgdToken::Comma | FgdToken::CParenthesis);
+  while (token.hasType(FgdToken::Comma))
+  {
+    auto parameterName = m_tokenizer.nextToken(FgdToken::Word).data();
+    m_tokenizer.nextToken(FgdToken::Equality);
+    auto parameterValue = m_tokenizer.nextToken(FgdToken::String | FgdToken::Word).data();
+    parameters.emplace(std::move(parameterName), std::move(parameterValue));
+    token = m_tokenizer.nextToken(FgdToken::Comma | FgdToken::CParenthesis);
+  }
 
   if (kdl::ci::str_is_equal(typeName, "target_destination"))
   {
@@ -629,6 +725,26 @@ PropertyDefinition FgdParser::parsePropertyDefinition(ParserStatus& status)
   if (kdl::ci::str_is_equal(typeName, "modelpath"))
   {
     return parseModelPathPropertyDefinition(status, std::move(propertyKey));
+  }
+  if (kdl::ci::str_is_equal(typeName, "entity_ref"))
+  {
+    const auto it = parameters.find("requires_interface");
+    return parseEntityReferencePropertyDefinition(
+      status,
+      std::move(propertyKey),
+      it != parameters.end() ? std::optional{it->second} : std::nullopt);
+  }
+  if (kdl::ci::str_is_equal(typeName, "endpoint_ref"))
+  {
+    const auto entityProperty = parameters.find("entity_property");
+    const auto interfaceName = parameters.find("interface");
+    if (entityProperty == parameters.end() || interfaceName == parameters.end())
+    {
+      throw ParserException{
+        location, "endpoint_ref requires entity_property and interface parameters"};
+    }
+    return parseEndpointReferencePropertyDefinition(
+      status, std::move(propertyKey), entityProperty->second, interfaceName->second);
   }
   if (kdl::ci::str_is_equal(typeName, "integer"))
   {
@@ -723,6 +839,43 @@ PropertyDefinition FgdParser::parseModelPathPropertyDefinition(
   return {
     std::move(propertyKey),
     PropertyValueTypes::ModelPath{std::move(defaultValue)},
+    std::move(shortDescription),
+    std::move(longDescription),
+    readOnly};
+}
+
+PropertyDefinition FgdParser::parseEntityReferencePropertyDefinition(
+  ParserStatus& status,
+  std::string propertyKey,
+  std::optional<std::string> requiredInterface)
+{
+  const auto readOnly = parseReadOnlyFlag(status);
+  auto shortDescription = parsePropertyDescription();
+  auto defaultValue = parseDefaultStringValue(status);
+  auto longDescription = parsePropertyDescription();
+  return {
+    std::move(propertyKey),
+    PropertyValueTypes::EntityReference{
+      std::move(defaultValue), std::move(requiredInterface)},
+    std::move(shortDescription),
+    std::move(longDescription),
+    readOnly};
+}
+
+PropertyDefinition FgdParser::parseEndpointReferencePropertyDefinition(
+  ParserStatus& status,
+  std::string propertyKey,
+  std::string entityProperty,
+  std::string interfaceName)
+{
+  const auto readOnly = parseReadOnlyFlag(status);
+  auto shortDescription = parsePropertyDescription();
+  auto defaultValue = parseDefaultStringValue(status);
+  auto longDescription = parsePropertyDescription();
+  return {
+    std::move(propertyKey),
+    PropertyValueTypes::EndpointReference{
+      std::move(defaultValue), std::move(entityProperty), std::move(interfaceName)},
     std::move(shortDescription),
     std::move(longDescription),
     readOnly};

@@ -280,6 +280,20 @@ auto withDefaultValue(
         }
         return modelPathValueType;
       },
+      [&](PropertyValueTypes::EntityReference valueType) -> PropertyValueType {
+        if (hasAttribute(element, "value"))
+        {
+          valueType.defaultValue = parseString(element, "value");
+        }
+        return valueType;
+      },
+      [&](PropertyValueTypes::EndpointReference valueType) -> PropertyValueType {
+        if (hasAttribute(element, "value"))
+        {
+          valueType.defaultValue = parseString(element, "value");
+        }
+        return valueType;
+      },
       [&](PropertyValueTypes::Boolean booleanValueType) -> PropertyValueType {
         if (hasAttribute(element, "value"))
         {

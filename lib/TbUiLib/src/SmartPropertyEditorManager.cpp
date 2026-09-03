@@ -31,6 +31,8 @@
 #include "ui/SmartChoiceEditor.h"
 #include "ui/SmartColorEditor.h"
 #include "ui/SmartDefaultPropertyEditor.h"
+#include "ui/SmartEndpointReferenceEditor.h"
+#include "ui/SmartEntityReferenceEditor.h"
 #include "ui/SmartFlagsEditor.h"
 #include "ui/SmartModelEditor.h"
 #include "ui/SmartPropertyEditor.h"
@@ -130,6 +132,14 @@ void SmartPropertyEditorManager::createEditors(AppController& appController)
   registerEditor(
     makeSmartTypeEditorMatcher<mdl::PropertyValueTypes::ModelPath>(),
     new SmartModelEditor{appController, m_document, this});
+  registerEditor(
+    makeSmartTypeWithSameDefinitionEditorMatcher<
+      mdl::PropertyValueTypes::EntityReference>(),
+    new SmartEntityReferenceEditor{m_document, this});
+  registerEditor(
+    makeSmartTypeWithSameDefinitionEditorMatcher<
+      mdl::PropertyValueTypes::EndpointReference>(),
+    new SmartEndpointReferenceEditor{m_document, this});
   registerEditor(
     [&](const auto& propertyKey, const auto& nodes) {
       return nodes.size() == 1

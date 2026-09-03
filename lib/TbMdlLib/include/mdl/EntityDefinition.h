@@ -21,6 +21,7 @@
 
 #include "base/Color.h"
 #include "mdl/DecalDefinition.h"
+#include "mdl/EntityInterfaceDefinition.h"
 #include "mdl/ModelDefinition.h"
 #include "mdl/PropertyDefinition.h"
 
@@ -54,6 +55,7 @@ struct EntityDefinition
   std::vector<PropertyDefinition> propertyDefinitions;
   std::optional<PointEntityDefinition> pointEntityDefinition = std::nullopt;
   size_t index = 0;
+  std::vector<EntityInterfaceDefinition> interfaces;
 
   size_t usageCount() const;
   void incUsageCount() const;
@@ -66,7 +68,8 @@ struct EntityDefinition
     color,
     description,
     propertyDefinitions,
-    pointEntityDefinition);
+    pointEntityDefinition,
+    interfaces);
 
   // Use a shared pointer to enable copying
   std::shared_ptr<std::atomic<size_t>> m_usageCount =

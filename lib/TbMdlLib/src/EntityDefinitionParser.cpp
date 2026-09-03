@@ -73,10 +73,11 @@ std::optional<PropertyDefinition> mergePropertyDefinitions(
           mergedDefaultValue = mergedDefaultValue | flagValue;
         }
 
-        mergedFlags.push_back(PropertyValueTypes::Flag{
-          baseclassFlag->value,
-          baseclassFlag->shortDescription,
-          baseclassFlag->longDescription});
+        mergedFlags.push_back(
+          PropertyValueTypes::Flag{
+            baseclassFlag->value,
+            baseclassFlag->shortDescription,
+            baseclassFlag->longDescription});
       }
       else if (classFlag)
       {
@@ -85,8 +86,9 @@ std::optional<PropertyDefinition> mergePropertyDefinitions(
           mergedDefaultValue = mergedDefaultValue | flagValue;
         }
 
-        mergedFlags.push_back(PropertyValueTypes::Flag{
-          classFlag->value, classFlag->shortDescription, classFlag->longDescription});
+        mergedFlags.push_back(
+          PropertyValueTypes::Flag{
+            classFlag->value, classFlag->shortDescription, classFlag->longDescription});
       }
     }
 
@@ -140,6 +142,48 @@ void inheritPropertyDefinitions(
         auto mergedPropertyDefinition = mergePropertyDefinitions(*it, propertyDefinition))
       {
         *it = *mergedPropertyDefinition;
+      }
+    }
+  }
+
+  for (const auto& superInterface : superClass.interfaces)
+  {
+    auto interfaceIt = std::ranges::find(
+      inheritingClass.interfaces, superInterface.name, &EntityInterfaceDefinition::name);
+    if (interfaceIt == inheritingClass.interfaces.end())
+    {
+      inheritingClass.interfaces.push_back(superInterface);
+      continue;
+    }
+
+    if (!interfaceIt->displayName)
+    {
+      interfaceIt->displayName = superInterface.displayName;
+    }
+    if (!interfaceIt->description)
+    {
+      interfaceIt->description = superInterface.description;
+    }
+    for (const auto& superEndpoint : superInterface.endpoints)
+    {
+      auto endpointIt = std::ranges::find(
+        interfaceIt->endpoints,
+        superEndpoint.name,
+        &EntityInterfaceEndpointDefinition::name);
+      if (endpointIt == interfaceIt->endpoints.end())
+      {
+        interfaceIt->endpoints.push_back(superEndpoint);
+      }
+      else
+      {
+        if (!endpointIt->displayName)
+        {
+          endpointIt->displayName = superEndpoint.displayName;
+        }
+        if (!endpointIt->description)
+        {
+          endpointIt->description = superEndpoint.description;
+        }
       }
     }
   }
@@ -420,11 +464,12 @@ std::optional<EntityDefinition> createDefinition(
   auto size = std::move(classInfo.size).value_or(DefaultSize);
   auto description = std::move(classInfo.description).value_or("");
   auto propertyDefinitions = std::move(classInfo.propertyDefinitions);
+  auto interfaces = std::move(classInfo.interfaces);
 
   switch (classInfo.type)
   {
-  case EntityDefinitionClassType::PointClass:
-    return EntityDefinition{
+  case EntityDefinitionClassType::PointClass: {
+    auto definition = EntityDefinition{
       std::move(name),
       color,
       std::move(description),
@@ -434,14 +479,23 @@ std::optional<EntityDefinition> createDefinition(
         std::move(classInfo.modelDefinition).value_or(ModelDefinition{}),
         std::move(classInfo.decalDefinition).value_or(DecalDefinition{}),
       },
+      0u,
+      std::move(interfaces),
     };
-  case EntityDefinitionClassType::BrushClass:
-    return EntityDefinition{
+    return definition;
+  }
+  case EntityDefinitionClassType::BrushClass: {
+    auto definition = EntityDefinition{
       std::move(name),
       color,
       std::move(description),
       std::move(propertyDefinitions),
+      std::nullopt,
+      0u,
+      std::move(interfaces),
     };
+    return definition;
+  }
   case EntityDefinitionClassType::BaseClass:
     return std::nullopt;
     switchDefault();

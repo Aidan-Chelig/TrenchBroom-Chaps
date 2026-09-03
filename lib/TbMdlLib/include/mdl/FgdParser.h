@@ -127,7 +127,9 @@ private:
   std::string parseNamedValue(ParserStatus& status, const std::string& name);
   void skipClassProperty(ParserStatus& status);
 
-  std::vector<PropertyDefinition> parsePropertyDefinitions(ParserStatus& status);
+  std::vector<PropertyDefinition> parsePropertyDefinitions(
+    ParserStatus& status, std::vector<EntityInterfaceDefinition>& interfaces);
+  EntityInterfaceDefinition parseInterfaceDefinition(ParserStatus& status);
   PropertyDefinition parsePropertyDefinition(ParserStatus& status);
   PropertyDefinition parseTargetSourcePropertyDefinition(
     ParserStatus& status, std::string propertyKey);
@@ -137,6 +139,15 @@ private:
     ParserStatus& status, std::string propertyKey);
   PropertyDefinition parseModelPathPropertyDefinition(
     ParserStatus& status, std::string propertyKey);
+  PropertyDefinition parseEntityReferencePropertyDefinition(
+    ParserStatus& status,
+    std::string propertyKey,
+    std::optional<std::string> requiredInterface);
+  PropertyDefinition parseEndpointReferencePropertyDefinition(
+    ParserStatus& status,
+    std::string propertyKey,
+    std::string entityProperty,
+    std::string interfaceName);
   PropertyDefinition parseIntegerPropertyDefinition(
     ParserStatus& status, std::string propertyKey);
   PropertyDefinition parseFloatPropertyDefinition(

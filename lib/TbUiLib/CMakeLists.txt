@@ -152,6 +152,8 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartDefaultPropertyEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartFlagsEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartModelEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartEndpointReferenceEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartEntityReferenceEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartPropertyEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartPropertyEditorManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartWadEditor.cpp
@@ -340,6 +342,8 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartDefaultPropertyEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartFlagsEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartModelEditor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartEndpointReferenceEditor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartEntityReferenceEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartPropertyEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartPropertyEditorManager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartWadEditor.h

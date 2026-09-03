@@ -22,6 +22,7 @@
 #include "base/Color.h"
 #include "base/FileLocation.h"
 #include "mdl/DecalDefinition.h"
+#include "mdl/EntityInterfaceDefinition.h"
 #include "mdl/ModelDefinition.h"
 #include "mdl/PropertyDefinition.h"
 
@@ -61,6 +62,7 @@ struct EntityDefinitionClassInfo
 
   std::vector<PropertyDefinition> propertyDefinitions;
   std::vector<std::string> superClasses;
+  std::vector<EntityInterfaceDefinition> interfaces;
 
   kdl_reflect_decl(
     EntityDefinitionClassInfo,
@@ -73,7 +75,8 @@ struct EntityDefinitionClassInfo
     modelDefinition,
     decalDefinition,
     propertyDefinitions,
-    superClasses);
+    superClasses,
+    interfaces);
 };
 
 bool addPropertyDefinition(
