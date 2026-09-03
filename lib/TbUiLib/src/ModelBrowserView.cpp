@@ -42,6 +42,7 @@
 #include "vm/mat_ext.h"
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <vector>
 
@@ -84,7 +85,9 @@ void ModelBrowserView::doInitLayout(Layout& layout)
   layout.setCellMargin(5.0f);
   layout.setCellWidth(110.0f, 110.0f);
   layout.setCellHeight(72.0f, 136.0f);
-  layout.setMaxUpScale(1.5f);
+  // Model formats use different authoring units. Fit even meter-scale models into the
+  // thumbnail instead of applying the entity browser's conservative upscale cap.
+  layout.setMaxUpScale(std::numeric_limits<float>::max());
 }
 
 void ModelBrowserView::doReloadLayout(Layout& layout)
