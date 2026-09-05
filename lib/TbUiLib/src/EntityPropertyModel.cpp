@@ -495,6 +495,48 @@ std::vector<std::string> getAllValuesForPropertyValueTypes(const mdl::Map& map)
   return result.release_data();
 }
 
+std::vector<std::string> getEntityReferenceCompletions(
+  const mdl::Map& map, const mdl::PropertyValueTypes::EntityReference& reference)
+{
+  auto result = kdl::vector_set<std::string>{};
+  map.worldNode().accept(
+    kdl::overload(
+      [](auto&& thisLambda, const mdl::WorldNode& worldNode) {
+        worldNode.visitChildren(thisLambda);
+      },
+      [](auto&& thisLambda, const mdl::LayerNode& layerNode) {
+        layerNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::GroupNode& groupNode) {
+        groupNode.visitChildren(thisLambda);
+      },
+      [&](const mdl::EntityNode& entityNode) {
+        const auto* definition = entityNode.entity().definition();
+        if (
+          !definition
+          || (reference.requiredInterface
+              && !mdl::getEntityInterfaceDefinition(
+                definition->interfaces, *reference.requiredInterface)))
+        {
+          return;
+        }
+
+        for (const auto* propertyDefinition :
+             mdl::getLinkTargetPropertyDefinitions(definition))
+        {
+          if (const auto* value = entityNode.entity().property(propertyDefinition->key))
+          {
+            result.insert(*value);
+          }
+        }
+      },
+      [](const mdl::BrushNode&) {},
+      [](const mdl::PatchNode&) {}));
+
+  result.erase("");
+  return result.release_data();
+}
+
 bool computeShouldShowProtectedProperties(
   const std::vector<mdl::EntityNodeBase*>& entityNodes)
 {
@@ -648,6 +690,17 @@ QStringList EntityPropertyModel::getCompletions(const QModelIndex& index) const
       if (row.key == mdl::EntityPropertyKeys::Classname)
       {
         result = getAllClassnames(map);
+      }
+      else if (
+        const auto* propertyDefinition =
+          mdl::selectPropertyDefinition(row.key, map.selection().allEntities()))
+      {
+        if (
+          const auto* reference = std::get_if<mdl::PropertyValueTypes::EntityReference>(
+            &propertyDefinition->valueType))
+        {
+          result = getEntityReferenceCompletions(map, *reference);
+        }
       }
       break;
     }

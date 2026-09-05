@@ -91,6 +91,20 @@ TEST_CASE("EntityPropertyModel")
          true,
        },
      }},
+    {"action_entity",
+     {},
+     {},
+     {{"name", mdl::PropertyValueTypes::LinkTarget{}, {}, {}}},
+     std::nullopt,
+     0u,
+     {{"actions", {}, {}, {{"open", {}, {}}}}}},
+    {"reference_entity",
+     {},
+     {},
+     {{"target",
+       mdl::PropertyValueTypes::EntityReference{std::nullopt, "actions"},
+       {},
+       {}}}},
   });
 
   auto* sourceEntity = new mdl::EntityNode{mdl::Entity{{
@@ -108,6 +122,15 @@ TEST_CASE("EntityPropertyModel")
     {"readonly", "some_value"},
   }}};
 
+  auto* actionEntity = new mdl::EntityNode{mdl::Entity{{
+    {"classname", "action_entity"},
+    {"name", "door"},
+  }}};
+
+  auto* referenceEntity = new mdl::EntityNode{mdl::Entity{{
+    {"classname", "reference_entity"},
+  }}};
+
   mdl::addNodes(
     map,
     {
@@ -119,6 +142,8 @@ TEST_CASE("EntityPropertyModel")
          sourceEntity,
          targetEntity,
          readonlyEntity,
+         actionEntity,
+         referenceEntity,
        }},
     });
 
@@ -249,7 +274,14 @@ TEST_CASE("EntityPropertyModel")
 
   SECTION("getCompletions")
   {
-    // cannot be tested because QModelIndex cannot be created
+    mdl::selectNodes(map, {referenceEntity});
+    model.updateFromMap();
+
+    const auto row = model.rowIndexForPropertyKey("target");
+    REQUIRE(row >= 0);
+    CHECK(
+      model.getCompletions(model.index(row, EntityPropertyModel::ColumnValue))
+      == QStringList{"door"});
   }
 
   SECTION("updateFromMap")
