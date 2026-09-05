@@ -101,10 +101,21 @@ TEST_CASE("EntityPropertyModel")
     {"reference_entity",
      {},
      {},
-     {{"target",
-       mdl::PropertyValueTypes::EntityReference{std::nullopt, "actions"},
-       {},
-       {}}}},
+     {
+       {"target",
+        mdl::PropertyValueTypes::EntityReference{std::nullopt, "actions"},
+        {},
+        {}},
+       {"action",
+        mdl::PropertyValueTypes::EndpointReference{std::nullopt, "target", "actions"},
+        {},
+        {}},
+       {"mode",
+        mdl::PropertyValueTypes::Choice{
+          {{"once", "Once"}, {"repeat", "Repeat"}}, std::nullopt},
+        {},
+        {}},
+     }},
   });
 
   auto* sourceEntity = new mdl::EntityNode{mdl::Entity{{
@@ -129,6 +140,7 @@ TEST_CASE("EntityPropertyModel")
 
   auto* referenceEntity = new mdl::EntityNode{mdl::Entity{{
     {"classname", "reference_entity"},
+    {"target", "door"},
   }}};
 
   mdl::addNodes(
@@ -277,11 +289,23 @@ TEST_CASE("EntityPropertyModel")
     mdl::selectNodes(map, {referenceEntity});
     model.updateFromMap();
 
-    const auto row = model.rowIndexForPropertyKey("target");
-    REQUIRE(row >= 0);
+    const auto targetRow = model.rowIndexForPropertyKey("target");
+    REQUIRE(targetRow >= 0);
     CHECK(
-      model.getCompletions(model.index(row, EntityPropertyModel::ColumnValue))
+      model.getCompletions(model.index(targetRow, EntityPropertyModel::ColumnValue))
       == QStringList{"door"});
+
+    const auto actionRow = model.rowIndexForPropertyKey("action");
+    REQUIRE(actionRow >= 0);
+    CHECK(
+      model.getCompletions(model.index(actionRow, EntityPropertyModel::ColumnValue))
+      == QStringList{"open"});
+
+    const auto modeRow = model.rowIndexForPropertyKey("mode");
+    REQUIRE(modeRow >= 0);
+    CHECK(
+      model.getCompletions(model.index(modeRow, EntityPropertyModel::ColumnValue))
+      == QStringList{"once", "repeat"});
   }
 
   SECTION("updateFromMap")

@@ -537,6 +537,64 @@ std::vector<std::string> getEntityReferenceCompletions(
   return result.release_data();
 }
 
+std::vector<std::string> getEndpointReferenceCompletions(
+  const mdl::Map& map,
+  const std::vector<mdl::EntityNodeBase*>& selectedEntities,
+  const mdl::PropertyValueTypes::EndpointReference& reference)
+{
+  const auto targetName =
+    mdl::selectPropertyValue(reference.entityProperty, selectedEntities);
+  if (targetName.empty())
+  {
+    return {};
+  }
+
+  auto result = kdl::vector_set<std::string>{};
+  map.worldNode().accept(
+    kdl::overload(
+      [](auto&& thisLambda, const mdl::WorldNode& worldNode) {
+        worldNode.visitChildren(thisLambda);
+      },
+      [](auto&& thisLambda, const mdl::LayerNode& layerNode) {
+        layerNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::GroupNode& groupNode) {
+        groupNode.visitChildren(thisLambda);
+      },
+      [&](const mdl::EntityNode& entityNode) {
+        const auto* definition = entityNode.entity().definition();
+        if (!definition)
+        {
+          return;
+        }
+
+        const auto nameMatches = std::ranges::any_of(
+          mdl::getLinkTargetPropertyDefinitions(definition),
+          [&](const auto* propertyDefinition) {
+            const auto* value = entityNode.entity().property(propertyDefinition->key);
+            return value && *value == targetName;
+          });
+        if (!nameMatches)
+        {
+          return;
+        }
+
+        if (
+          const auto* interfaceDefinition = mdl::getEntityInterfaceDefinition(
+            definition->interfaces, reference.interfaceName))
+        {
+          for (const auto& endpoint : interfaceDefinition->endpoints)
+          {
+            result.insert(endpoint.name);
+          }
+        }
+      },
+      [](const mdl::BrushNode&) {},
+      [](const mdl::PatchNode&) {}));
+
+  return result.release_data();
+}
+
 bool computeShouldShowProtectedProperties(
   const std::vector<mdl::EntityNodeBase*>& entityNodes)
 {
@@ -695,12 +753,23 @@ QStringList EntityPropertyModel::getCompletions(const QModelIndex& index) const
         const auto* propertyDefinition =
           mdl::selectPropertyDefinition(row.key, map.selection().allEntities()))
       {
-        if (
-          const auto* reference = std::get_if<mdl::PropertyValueTypes::EntityReference>(
-            &propertyDefinition->valueType))
-        {
-          result = getEntityReferenceCompletions(map, *reference);
-        }
+        std::visit(
+          kdl::overload(
+            [&](const mdl::PropertyValueTypes::EntityReference& reference) {
+              result = getEntityReferenceCompletions(map, reference);
+            },
+            [&](const mdl::PropertyValueTypes::EndpointReference& reference) {
+              result = getEndpointReferenceCompletions(
+                map, map.selection().allEntities(), reference);
+            },
+            [&](const mdl::PropertyValueTypes::Choice& choice) {
+              result =
+                choice.options
+                | std::views::transform([](const auto& option) { return option.value; })
+                | kdl::ranges::to<std::vector>();
+            },
+            [](const auto&) {}),
+          propertyDefinition->valueType);
       }
       break;
     }
