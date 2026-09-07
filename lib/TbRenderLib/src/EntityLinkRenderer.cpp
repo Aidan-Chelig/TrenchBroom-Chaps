@@ -22,6 +22,7 @@
 #include "base/PreferenceManager.h"
 #include "mdl/BrushNode.h"
 #include "mdl/EditorContext.h"
+#include "mdl/EntityDefinition.h"
 #include "mdl/EntityLinkManager.h"
 #include "mdl/EntityNode.h"
 #include "mdl/EntityNodeBase.h"
@@ -40,6 +41,7 @@
 #include <cassert>
 #include <ranges>
 #include <set>
+#include <tuple>
 #include <unordered_set>
 
 namespace tb::render
@@ -48,27 +50,33 @@ namespace tb::render
 namespace
 {
 
-auto getLinkEnds(const auto& entityLinks)
+Color getLinkColor(
+  const mdl::EntityNodeBase& sourceNode,
+  const std::string& sourcePropertyKey,
+  const Color& defaultColor)
 {
-  return entityLinks
-         | std::views::transform(
-           [](const auto& nameAndTargetNodes) -> const mdl::EntityLinkManager::LinkEnds& {
-             return nameAndTargetNodes.second;
-           })
-         | std::views::join;
+  const auto* propertyDefinition =
+    mdl::getPropertyDefinition(sourceNode.entity().definition(), sourcePropertyKey);
+  const auto* reference = propertyDefinition
+                            ? std::get_if<mdl::PropertyValueTypes::EntityReference>(
+                                &propertyDefinition->valueType)
+                            : nullptr;
+  return reference && reference->linkColor ? *reference->linkColor : defaultColor;
 }
 
 void addLink(
   const mdl::EntityNodeBase& sourceNode,
   const mdl::EntityNodeBase& targetNode,
+  const std::string& sourcePropertyKey,
   const Color& defaultColor,
   const Color& selectedColor,
   std::vector<LinkRenderer::LineVertex>& links)
 {
   const auto anySelected = sourceNode.selected() || sourceNode.descendantSelected()
                            || targetNode.selected() || targetNode.descendantSelected();
-  const auto& sourceColor = anySelected ? selectedColor : defaultColor;
-  const auto& targetColor = anySelected ? selectedColor : defaultColor;
+  const auto linkColor = getLinkColor(sourceNode, sourcePropertyKey, defaultColor);
+  const auto& sourceColor = anySelected ? selectedColor : linkColor;
+  const auto& targetColor = anySelected ? selectedColor : linkColor;
 
   links.emplace_back(
     vm::vec3f{sourceNode.linkSourceAnchor()}, sourceColor.to<RgbaF>().toVec());
@@ -97,12 +105,21 @@ struct CollectAllLinksVisitor
     const mdl::EntityLinkManager::LinkEndsForPropertyKey& entityLinks,
     std::vector<LinkRenderer::LineVertex>& linkVertices)
   {
-    for (const auto& linkEnd : getLinkEnds(entityLinks))
+    for (const auto& [sourcePropertyKey, linkEnds] : entityLinks)
     {
-      const auto& targetNode = *linkEnd.node;
-      if (editorContext.visible(targetNode))
+      for (const auto& linkEnd : linkEnds)
       {
-        addLink(sourceNode, targetNode, defaultColor, selectedColor, linkVertices);
+        const auto& targetNode = *linkEnd.node;
+        if (editorContext.visible(targetNode))
+        {
+          addLink(
+            sourceNode,
+            targetNode,
+            sourcePropertyKey,
+            defaultColor,
+            selectedColor,
+            linkVertices);
+        }
       }
     }
   }
@@ -116,7 +133,8 @@ struct CollectTransitiveSelectedLinksVisitor
   Color selectedColor;
 
   std::unordered_set<const mdl::Node*> visitedNodes;
-  std::set<std::pair<const mdl::EntityNodeBase*, const mdl::EntityNodeBase*>>
+  std::set<
+    std::tuple<const mdl::EntityNodeBase*, const mdl::EntityNodeBase*, std::string>>
     visitedEdges;
 
   void visit(
@@ -134,15 +152,24 @@ struct CollectTransitiveSelectedLinksVisitor
     const mdl::EntityLinkManager::LinkEndsForPropertyKey& entityLinks,
     std::vector<LinkRenderer::LineVertex>& linkVertices)
   {
-    for (const auto& linkEnd : getLinkEnds(entityLinks))
+    for (const auto& [sourcePropertyKey, linkEnds] : entityLinks)
     {
-      const auto& targetNode = *linkEnd.node;
-      if (
-        editorContext.visible(targetNode)
-        && visitedEdges.insert({&sourceNode, &targetNode}).second)
+      for (const auto& linkEnd : linkEnds)
       {
-        addLink(sourceNode, targetNode, defaultColor, selectedColor, linkVertices);
-        visit(targetNode, linkVertices);
+        const auto& targetNode = *linkEnd.node;
+        if (
+          editorContext.visible(targetNode)
+          && visitedEdges.insert({&sourceNode, &targetNode, sourcePropertyKey}).second)
+        {
+          addLink(
+            sourceNode,
+            targetNode,
+            sourcePropertyKey,
+            defaultColor,
+            selectedColor,
+            linkVertices);
+          visit(targetNode, linkVertices);
+        }
       }
     }
   }
@@ -152,15 +179,25 @@ struct CollectTransitiveSelectedLinksVisitor
     const mdl::EntityLinkManager::LinkEndsForPropertyKey& entityLinks,
     std::vector<LinkRenderer::LineVertex>& linkVertices)
   {
-    for (const auto& linkEnd : getLinkEnds(entityLinks))
+    for (const auto& entry : entityLinks)
     {
-      const auto& sourceNode = *linkEnd.node;
-      if (
-        editorContext.visible(sourceNode)
-        && visitedEdges.insert({&sourceNode, &targetNode}).second)
+      const auto& linkEnds = entry.second;
+      for (const auto& linkEnd : linkEnds)
       {
-        addLink(sourceNode, targetNode, defaultColor, selectedColor, linkVertices);
-        visit(sourceNode, linkVertices);
+        const auto& sourceNode = *linkEnd.node;
+        if (
+          editorContext.visible(sourceNode)
+          && visitedEdges.insert({&sourceNode, &targetNode, linkEnd.propertyKey}).second)
+        {
+          addLink(
+            sourceNode,
+            targetNode,
+            linkEnd.propertyKey,
+            defaultColor,
+            selectedColor,
+            linkVertices);
+          visit(sourceNode, linkVertices);
+        }
       }
     }
   }
@@ -188,12 +225,21 @@ struct CollectDirectSelectedLinksVisitor
     const mdl::EntityLinkManager::LinkEndsForPropertyKey& entityLinks,
     std::vector<LinkRenderer::LineVertex>& linkVertices)
   {
-    for (const auto& linkEnd : getLinkEnds(entityLinks))
+    for (const auto& [sourcePropertyKey, linkEnds] : entityLinks)
     {
-      const auto& targetNode = *linkEnd.node;
-      if (editorContext.visible(targetNode))
+      for (const auto& linkEnd : linkEnds)
       {
-        addLink(sourceNode, targetNode, defaultColor, selectedColor, linkVertices);
+        const auto& targetNode = *linkEnd.node;
+        if (editorContext.visible(targetNode))
+        {
+          addLink(
+            sourceNode,
+            targetNode,
+            sourcePropertyKey,
+            defaultColor,
+            selectedColor,
+            linkVertices);
+        }
       }
     }
   }
@@ -203,14 +249,24 @@ struct CollectDirectSelectedLinksVisitor
     const mdl::EntityLinkManager::LinkEndsForPropertyKey& entityLinks,
     std::vector<LinkRenderer::LineVertex>& linkVertices)
   {
-    for (const auto& linkEnd : getLinkEnds(entityLinks))
+    for (const auto& entry : entityLinks)
     {
-      const auto& sourceNode = *linkEnd.node;
-      if (
-        !sourceNode.selected() && !sourceNode.descendantSelected()
-        && editorContext.visible(sourceNode))
+      const auto& linkEnds = entry.second;
+      for (const auto& linkEnd : linkEnds)
       {
-        addLink(sourceNode, targetNode, defaultColor, selectedColor, linkVertices);
+        const auto& sourceNode = *linkEnd.node;
+        if (
+          !sourceNode.selected() && !sourceNode.descendantSelected()
+          && editorContext.visible(sourceNode))
+        {
+          addLink(
+            sourceNode,
+            targetNode,
+            linkEnd.propertyKey,
+            defaultColor,
+            selectedColor,
+            linkVertices);
+        }
       }
     }
   }

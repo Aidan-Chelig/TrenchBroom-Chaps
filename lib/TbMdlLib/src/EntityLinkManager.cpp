@@ -90,9 +90,21 @@ auto getPropertyKeysWithMissingLinkEnd(
 
 auto getLinkSourcePropertyKeys(const EntityNodeBase& sourceNode)
 {
-  return getLinkSourcePropertyDefinitions(sourceNode.entity().definition())
+  const auto* definition = sourceNode.entity().definition();
+  if (!definition)
+  {
+    return std::vector<std::string>{};
+  }
+
+  return definition->propertyDefinitions
+         | std::views::filter([](const auto& propertyDefinition) {
+             return std::holds_alternative<PropertyValueTypes::LinkSource>(
+                      propertyDefinition.valueType)
+                    || std::holds_alternative<PropertyValueTypes::EntityReference>(
+                      propertyDefinition.valueType);
+           })
          | std::views::transform(
-           [](const auto* propertyDefinition) { return propertyDefinition->key; })
+           [](const auto& propertyDefinition) { return propertyDefinition.key; })
          | kdl::ranges::to<std::vector>();
 }
 

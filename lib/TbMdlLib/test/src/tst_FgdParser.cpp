@@ -51,7 +51,7 @@ TEST_CASE("FgdParser")
         ]
       ]
       @PointClass base(Interactive) = logic_signal_action [
-        target(entity_ref, requires_interface="actions") : "Target"
+        target(entity_ref, requires_interface="actions", color="0.2 0.4 0.8") : "Target"
         action(endpoint_ref, entity_property="target", interface="actions") : "Action"
       ]
     )";
@@ -69,6 +69,7 @@ TEST_CASE("FgdParser")
     const auto& targetReference =
       std::get<PropertyValueTypes::EntityReference>(target->valueType);
     CHECK(targetReference.requiredInterface == "actions");
+    CHECK(targetReference.linkColor == Color{RgbF{0.2f, 0.4f, 0.8f}});
 
     const auto* action = getPropertyDefinition(definitions.front(), "action");
     REQUIRE(action != nullptr);

@@ -19,6 +19,7 @@
 
 #include "mdl/LinkTargetValidator.h"
 
+#include "mdl/EntityDefinition.h"
 #include "mdl/EntityLinkManager.h"
 #include "mdl/EntityNodeBase.h"
 #include "mdl/Issue.h"
@@ -50,11 +51,21 @@ void LinkTargetValidator::doValidate(
   {
     for (const auto& key : missingLinkKeys)
     {
-      issues.push_back(std::make_unique<EntityPropertyIssue>(
-        Type,
-        entityNode,
-        key,
-        entityNode.name() + " has missing target for key '" + key + "'"));
+      const auto* propertyDefinition =
+        getPropertyDefinition(entityNode.entity().definition(), key);
+      if (
+        propertyDefinition
+        && std::holds_alternative<PropertyValueTypes::EntityReference>(
+          propertyDefinition->valueType))
+      {
+        continue;
+      }
+      issues.push_back(
+        std::make_unique<EntityPropertyIssue>(
+          Type,
+          entityNode,
+          key,
+          entityNode.name() + " has missing target for key '" + key + "'"));
     }
   }
 }

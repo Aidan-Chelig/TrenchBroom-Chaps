@@ -72,13 +72,18 @@ TEST_CASE("EntityLinkRenderer")
 
   constexpr auto sourceClassname = "source_definition";
   constexpr auto targetClassname = "target_definition";
+  const auto propertyColor = Color{RgbaF{0.2f, 0.4f, 0.8f, 1.0f}};
 
   map.entityDefinitionManager().setDefinitions(
     {{sourceClassname,
       {},
       {},
       {
-        {Target, mdl::PropertyValueTypes::LinkSource{}, {}, {}},
+        {Target,
+         mdl::PropertyValueTypes::EntityReference{
+           std::nullopt, std::nullopt, propertyColor},
+         {},
+         {}},
       }},
      {targetClassname,
       {},
@@ -114,7 +119,7 @@ TEST_CASE("EntityLinkRenderer")
   SECTION("getLinks")
   {
     SECTION(
-      "EntityLinkModeAll returns the link with the default color when neither "
+      "EntityLinkModeAll returns the property color when neither "
       "endpoint is selected")
     {
       setPref(Preferences::EntityLinkMode, std::string{Preferences::EntityLinkModeAll});
@@ -122,9 +127,9 @@ TEST_CASE("EntityLinkRenderer")
       const auto links = renderer.getLinks();
       REQUIRE(links.size() == 2);
       CHECK(gl::getVertexComponent<0>(links[0]) == sourceAnchor);
-      CHECK(gl::getVertexComponent<1>(links[0]) == defaultColor.to<RgbaF>().toVec());
+      CHECK(gl::getVertexComponent<1>(links[0]) == propertyColor.to<RgbaF>().toVec());
       CHECK(gl::getVertexComponent<0>(links[1]) == targetAnchor);
-      CHECK(gl::getVertexComponent<1>(links[1]) == defaultColor.to<RgbaF>().toVec());
+      CHECK(gl::getVertexComponent<1>(links[1]) == propertyColor.to<RgbaF>().toVec());
     }
 
     SECTION(

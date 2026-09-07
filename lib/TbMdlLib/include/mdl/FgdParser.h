@@ -142,7 +142,8 @@ private:
   PropertyDefinition parseEntityReferencePropertyDefinition(
     ParserStatus& status,
     std::string propertyKey,
-    std::optional<std::string> requiredInterface);
+    std::optional<std::string> requiredInterface,
+    std::optional<Color> linkColor);
   PropertyDefinition parseEndpointReferencePropertyDefinition(
     ParserStatus& status,
     std::string propertyKey,

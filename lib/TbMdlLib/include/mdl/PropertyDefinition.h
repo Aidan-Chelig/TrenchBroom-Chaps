@@ -62,8 +62,9 @@ struct EntityReference
 {
   std::optional<std::string> defaultValue = std::nullopt;
   std::optional<std::string> requiredInterface = std::nullopt;
+  std::optional<Color> linkColor = std::nullopt;
 
-  kdl_reflect_decl(EntityReference, defaultValue, requiredInterface);
+  kdl_reflect_decl(EntityReference, defaultValue, requiredInterface, linkColor);
 };
 
 struct EndpointReference

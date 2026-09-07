@@ -728,11 +728,22 @@ PropertyDefinition FgdParser::parsePropertyDefinition(ParserStatus& status)
   }
   if (kdl::ci::str_is_equal(typeName, "entity_ref"))
   {
-    const auto it = parameters.find("requires_interface");
+    const auto requiredInterface = parameters.find("requires_interface");
+    const auto color = parameters.find("color");
+    auto linkColor = std::optional<Color>{};
+    if (color != parameters.end())
+    {
+      linkColor =
+        Color::parse(color->second)
+        | kdl::if_error([&](const auto& e) { throw ParserException{location, e.msg}; })
+        | kdl::value();
+    }
     return parseEntityReferencePropertyDefinition(
       status,
       std::move(propertyKey),
-      it != parameters.end() ? std::optional{it->second} : std::nullopt);
+      requiredInterface != parameters.end() ? std::optional{requiredInterface->second}
+                                            : std::nullopt,
+      std::move(linkColor));
   }
   if (kdl::ci::str_is_equal(typeName, "endpoint_ref"))
   {
@@ -847,7 +858,8 @@ PropertyDefinition FgdParser::parseModelPathPropertyDefinition(
 PropertyDefinition FgdParser::parseEntityReferencePropertyDefinition(
   ParserStatus& status,
   std::string propertyKey,
-  std::optional<std::string> requiredInterface)
+  std::optional<std::string> requiredInterface,
+  std::optional<Color> linkColor)
 {
   const auto readOnly = parseReadOnlyFlag(status);
   auto shortDescription = parsePropertyDescription();
@@ -856,7 +868,7 @@ PropertyDefinition FgdParser::parseEntityReferencePropertyDefinition(
   return {
     std::move(propertyKey),
     PropertyValueTypes::EntityReference{
-      std::move(defaultValue), std::move(requiredInterface)},
+      std::move(defaultValue), std::move(requiredInterface), std::move(linkColor)},
     std::move(shortDescription),
     std::move(longDescription),
     readOnly};
