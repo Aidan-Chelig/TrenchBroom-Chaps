@@ -1518,6 +1518,27 @@ TEST_CASE("ensureUniqueEntityNames")
   REQUIRE(ensureUniqueEntityNames(map));
   CHECK(*firstUnnamed->entity().property("name") == firstGeneratedName);
   CHECK(*secondUnnamed->entity().property("name") == secondGeneratedName);
+
+  auto* firstDuplicate = new EntityNode{Entity{{
+    {EntityPropertyKeys::Classname, "func_door"},
+    {"name", "custom_name"},
+  }}};
+  auto* secondDuplicate = new EntityNode{Entity{{
+    {EntityPropertyKeys::Classname, "func_door"},
+    {"name", "custom_name"},
+  }}};
+  addNodes(map, {{&parentForNodes(map), {firstDuplicate, secondDuplicate}}});
+
+  CHECK(hasDuplicateUniqueEntityNames(map));
+  REQUIRE(ensureUniqueEntityNames(map, true));
+  CHECK(!hasDuplicateUniqueEntityNames(map));
+
+  const auto repairedNames = std::vector{
+    *firstDuplicate->entity().property("name"),
+    *secondDuplicate->entity().property("name")};
+  CHECK_THAT(
+    repairedNames,
+    UnorderedEquals(std::vector<std::string>{"custom_name", "func_door_4"}));
 }
 
 } // namespace tb::mdl

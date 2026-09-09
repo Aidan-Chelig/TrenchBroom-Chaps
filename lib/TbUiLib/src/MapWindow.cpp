@@ -996,6 +996,11 @@ bool MapWindow::saveDocument()
 
   if (map.persistent())
   {
+    if (!confirmUniqueEntityNameChanges())
+    {
+      return false;
+    }
+
     const auto startTime = std::chrono::high_resolution_clock::now();
     return map.save() | kdl::transform([&]() {
              const auto endTime = std::chrono::high_resolution_clock::now();
@@ -1036,6 +1041,11 @@ bool MapWindow::saveDocumentAs()
 
   const auto path = pathFromQString(newFileName);
 
+  if (!confirmUniqueEntityNameChanges())
+  {
+    return false;
+  }
+
   const auto startTime = std::chrono::high_resolution_clock::now();
   return map.saveAs(path) | kdl::transform([&]() {
            const auto endTime = std::chrono::high_resolution_clock::now();
@@ -1055,6 +1065,39 @@ bool MapWindow::saveDocumentAs()
                QMessageBox::Ok);
            })
          | kdl::is_success();
+}
+
+bool MapWindow::confirmUniqueEntityNameChanges()
+{
+  auto& map = m_document->map();
+  if (!mdl::hasDuplicateUniqueEntityNames(map))
+  {
+    return true;
+  }
+
+  const auto result = QMessageBox::question(
+    this,
+    tr("Duplicate Entity Names"),
+    tr(
+      "Some entity properties that require unique names have duplicate values. "
+      "May TrenchBroom rename the duplicates before saving?"),
+    QMessageBox::Yes | QMessageBox::Cancel,
+    QMessageBox::Yes);
+  if (result != QMessageBox::Yes)
+  {
+    return false;
+  }
+
+  if (!mdl::ensureUniqueEntityNames(map, true))
+  {
+    QMessageBox::critical(
+      this,
+      tr("Could Not Rename Entities"),
+      tr("TrenchBroom could not make the entity names unique."),
+      QMessageBox::Ok);
+    return false;
+  }
+  return true;
 }
 
 void MapWindow::revertDocument()

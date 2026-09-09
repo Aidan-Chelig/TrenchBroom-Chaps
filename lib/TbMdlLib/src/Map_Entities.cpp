@@ -415,7 +415,36 @@ bool canClearProtectedEntityProperties(const Map& map)
   return canUpdateLinkedGroups(kdl::vec_static_cast<Node*>(entityNodes));
 }
 
-bool ensureUniqueEntityNames(Map& map)
+bool hasDuplicateUniqueEntityNames(const Map& map)
+{
+  auto uniqueNames = std::unordered_set<std::string>{};
+  for (const auto* node : collectDescendants(std::vector<const Node*>{&map.worldNode()}))
+  {
+    const auto* entityNode = dynamic_cast<const EntityNode*>(node);
+    const auto* definition = entityNode ? entityNode->entity().definition() : nullptr;
+    if (!definition)
+    {
+      continue;
+    }
+
+    for (const auto& propertyDefinition : definition->propertyDefinitions)
+    {
+      if (!propertyDefinition.requiresUniqueName)
+      {
+        continue;
+      }
+
+      if (const auto* value = entityNode->entity().property(propertyDefinition.key);
+          value && !value->empty() && !uniqueNames.insert(*value).second)
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool ensureUniqueEntityNames(Map& map, const bool replaceDuplicates)
 {
   auto entityNodes = std::vector<EntityNode*>{};
   for (auto* node : collectDescendants(std::vector<Node*>{&map.worldNode()}))
@@ -452,6 +481,7 @@ bool ensureUniqueEntityNames(Map& map)
   }
 
   auto nextSuffix = size_t{1};
+  auto encounteredUniqueNames = std::unordered_set<std::string>{};
   auto nodesToUpdate = std::vector<std::pair<Node*, NodeContents>>{};
   for (auto* entityNode : entityNodes)
   {
@@ -471,7 +501,9 @@ bool ensureUniqueEntityNames(Map& map)
       }
 
       const auto* currentValue = entity.property(propertyDefinition.key);
-      if (currentValue && !currentValue->empty())
+      if (
+        currentValue && !currentValue->empty()
+        && (!replaceDuplicates || encounteredUniqueNames.insert(*currentValue).second))
       {
         continue;
       }
@@ -483,6 +515,7 @@ bool ensureUniqueEntityNames(Map& map)
       } while (usedNames.contains(generatedName));
 
       usedNames.insert(generatedName);
+      encounteredUniqueNames.insert(generatedName);
       entity.addOrUpdateProperty(propertyDefinition.key, generatedName);
       changed = true;
     }

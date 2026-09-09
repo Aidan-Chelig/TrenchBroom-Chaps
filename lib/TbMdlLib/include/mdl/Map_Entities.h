@@ -56,8 +56,15 @@ bool setProtectedEntityProperty(Map& map, const std::string& key, bool value);
 bool clearProtectedEntityProperties(Map& map);
 bool canClearProtectedEntityProperties(const Map& map);
 
-/** Assigns collision-free values to empty properties marked unique. */
-bool ensureUniqueEntityNames(Map& map);
+/** Returns true if two properties marked unique have the same non-empty value. */
+bool hasDuplicateUniqueEntityNames(const Map& map);
+
+/**
+ * Assigns collision-free values to empty properties marked unique. If
+ * replaceDuplicates is true, all but one occurrence of each duplicate value are also
+ * replaced.
+ */
+bool ensureUniqueEntityNames(Map& map, bool replaceDuplicates = false);
 
 void setDefaultEntityProperties(Map& map, SetDefaultPropertyMode mode);
 

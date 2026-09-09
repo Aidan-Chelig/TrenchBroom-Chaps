@@ -207,6 +207,7 @@ private: // notification handlers
 
 private: // menu event handlers
   void bindEvents();
+  bool confirmUniqueEntityNameChanges();
 
 public:
   bool saveDocument();
