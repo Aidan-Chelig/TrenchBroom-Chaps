@@ -710,21 +710,38 @@ PropertyDefinition FgdParser::parsePropertyDefinition(ParserStatus& status)
     token = m_tokenizer.nextToken(FgdToken::Comma | FgdToken::CParenthesis);
   }
 
+  const auto finish = [&](PropertyDefinition definition) {
+    if (const auto unique = parameters.find("unique"); unique != parameters.end())
+    {
+      if (kdl::ci::str_is_equal(unique->second, "true"))
+      {
+        definition.requiresUniqueName = true;
+      }
+      else if (!kdl::ci::str_is_equal(unique->second, "false"))
+      {
+        throw ParserException{
+          location, "Property parameter 'unique' must be true or false"};
+      }
+    }
+    return definition;
+  };
+
   if (kdl::ci::str_is_equal(typeName, "target_destination"))
   {
-    return parseTargetDestinationPropertyDefinition(status, std::move(propertyKey));
+    return finish(
+      parseTargetDestinationPropertyDefinition(status, std::move(propertyKey)));
   }
   if (kdl::ci::str_is_equal(typeName, "target_source"))
   {
-    return parseTargetSourcePropertyDefinition(status, std::move(propertyKey));
+    return finish(parseTargetSourcePropertyDefinition(status, std::move(propertyKey)));
   }
   if (kdl::ci::str_is_equal(typeName, "string"))
   {
-    return parseStringPropertyDefinition(status, std::move(propertyKey));
+    return finish(parseStringPropertyDefinition(status, std::move(propertyKey)));
   }
   if (kdl::ci::str_is_equal(typeName, "modelpath"))
   {
-    return parseModelPathPropertyDefinition(status, std::move(propertyKey));
+    return finish(parseModelPathPropertyDefinition(status, std::move(propertyKey)));
   }
   if (kdl::ci::str_is_equal(typeName, "entity_ref"))
   {
@@ -738,12 +755,12 @@ PropertyDefinition FgdParser::parsePropertyDefinition(ParserStatus& status)
         | kdl::if_error([&](const auto& e) { throw ParserException{location, e.msg}; })
         | kdl::value();
     }
-    return parseEntityReferencePropertyDefinition(
+    return finish(parseEntityReferencePropertyDefinition(
       status,
       std::move(propertyKey),
       requiredInterface != parameters.end() ? std::optional{requiredInterface->second}
                                             : std::nullopt,
-      std::move(linkColor));
+      std::move(linkColor)));
   }
   if (kdl::ci::str_is_equal(typeName, "endpoint_ref"))
   {
@@ -754,45 +771,45 @@ PropertyDefinition FgdParser::parsePropertyDefinition(ParserStatus& status)
       throw ParserException{
         location, "endpoint_ref requires entity_property and interface parameters"};
     }
-    return parseEndpointReferencePropertyDefinition(
-      status, std::move(propertyKey), entityProperty->second, interfaceName->second);
+    return finish(parseEndpointReferencePropertyDefinition(
+      status, std::move(propertyKey), entityProperty->second, interfaceName->second));
   }
   if (kdl::ci::str_is_equal(typeName, "integer"))
   {
-    return parseIntegerPropertyDefinition(status, std::move(propertyKey));
+    return finish(parseIntegerPropertyDefinition(status, std::move(propertyKey)));
   }
   if (kdl::ci::str_is_equal(typeName, "float"))
   {
-    return parseFloatPropertyDefinition(status, std::move(propertyKey));
+    return finish(parseFloatPropertyDefinition(status, std::move(propertyKey)));
   }
   if (kdl::ci::str_is_equal(typeName, "choices"))
   {
-    return parseChoicesPropertyDefinition(status, std::move(propertyKey));
+    return finish(parseChoicesPropertyDefinition(status, std::move(propertyKey)));
   }
   if (kdl::ci::str_is_equal(typeName, "flags"))
   {
-    return parseFlagsPropertyDefinition(std::move(propertyKey));
+    return finish(parseFlagsPropertyDefinition(std::move(propertyKey)));
   }
   if (kdl::ci::str_is_equal(typeName, "origin"))
   {
-    return parseOriginPropertyDefinition(status, std::move(propertyKey));
+    return finish(parseOriginPropertyDefinition(status, std::move(propertyKey)));
   }
   if (kdl::ci::str_is_equal(typeName, "color1"))
   {
-    return parseColorPropertyDefinition(
-      status, ColorType::Color1, std::move(propertyKey));
+    return finish(
+      parseColorPropertyDefinition(status, ColorType::Color1, std::move(propertyKey)));
   }
   if (kdl::ci::str_is_equal(typeName, "color255"))
   {
-    return parseColorPropertyDefinition(
-      status, ColorType::Color255, std::move(propertyKey));
+    return finish(
+      parseColorPropertyDefinition(status, ColorType::Color255, std::move(propertyKey)));
   }
 
   status.debug(
     location,
     fmt::format(
       "Unknown property definition type '{}' for property '{}'", typeName, propertyKey));
-  return parseUnknownPropertyDefinition(status, std::move(propertyKey));
+  return finish(parseUnknownPropertyDefinition(status, std::move(propertyKey)));
 }
 
 PropertyDefinition FgdParser::parseTargetSourcePropertyDefinition(

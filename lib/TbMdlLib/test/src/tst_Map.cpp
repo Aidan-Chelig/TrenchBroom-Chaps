@@ -167,6 +167,32 @@ TEST_CASE("Map")
     CHECK_THAT(env.loadFile("test.map"), ContainsSubstring(expectedGenerator));
   }
 
+  SECTION("saveAs generates required unique entity names")
+  {
+    auto fixture = MapFixture{};
+    auto& map = fixture.create();
+    map.entityDefinitionManager().setDefinitions({
+      {"func_door",
+       {},
+       {},
+       {{.key = "name",
+         .valueType = PropertyValueTypes::LinkTarget{},
+         .requiresUniqueName = true}},
+       PointEntityDefinition{vm::bbox3d{16.0}, {}, {}}},
+    });
+
+    auto* entityNode = new EntityNode{
+      Entity{{{EntityPropertyKeys::Classname, "func_door"}}}};
+    addNodes(map, {{&parentForNodes(map), {entityNode}}});
+
+    auto env = fs::TestEnvironment{};
+    REQUIRE(map.saveAs(env.dir() / "test.map"));
+
+    REQUIRE(entityNode->entity().property("name"));
+    CHECK(*entityNode->entity().property("name") == "func_door_1");
+    CHECK_THAT(env.loadFile("test.map"), ContainsSubstring("\"name\" \"func_door_1\""));
+  }
+
   SECTION("selection")
   {
     auto fixture = MapFixture{};

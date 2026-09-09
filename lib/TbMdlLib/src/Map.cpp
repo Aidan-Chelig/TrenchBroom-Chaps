@@ -92,6 +92,7 @@
 #include "mdl/TagManager.h"
 #include "mdl/Transaction.h"
 #include "mdl/UndoableCommand.h"
+#include "mdl/UniqueEntityNameValidator.h"
 #include "mdl/UpdateLinkedGroupsCommand.h"
 #include "mdl/UpdateLinkedGroupsHelper.h"
 #include "mdl/WadPropertyUtils.h"
@@ -855,6 +856,10 @@ Result<void> Map::save()
 
 Result<void> Map::saveAs(const std::filesystem::path& path)
 {
+  if (!ensureUniqueEntityNames(*this))
+  {
+    return Error{"Could not generate required unique entity names"};
+  }
   return saveTo(path).transform([&]() {
     setLastSaveModificationCount();
     setPath(path);
@@ -1129,6 +1134,7 @@ void Map::registerValidators()
   m_worldNode->registerValidator(
     std::make_unique<LinkTargetValidator>(*m_entityLinkManager));
   m_worldNode->registerValidator(std::make_unique<EntityReferenceValidator>(*this));
+  m_worldNode->registerValidator(std::make_unique<UniqueEntityNameValidator>(*this));
   m_worldNode->registerValidator(std::make_unique<NonIntegerVerticesValidator>());
   m_worldNode->registerValidator(std::make_unique<MixedBrushContentsValidator>());
   m_worldNode->registerValidator(std::make_unique<WorldBoundsValidator>(worldBounds()));

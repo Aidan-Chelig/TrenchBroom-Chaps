@@ -1480,4 +1480,44 @@ TEST_CASE("Map_Entities")
   }
 }
 
+TEST_CASE("ensureUniqueEntityNames")
+{
+  auto fixture = MapFixture{};
+  auto& map = fixture.create();
+
+  map.entityDefinitionManager().setDefinitions({
+    {"func_door",
+     {},
+     {},
+     {{.key = "name",
+       .valueType = PropertyValueTypes::LinkTarget{},
+       .requiresUniqueName = true}},
+     PointEntityDefinition{vm::bbox3d{16.0}, {}, {}}},
+  });
+
+  auto* existing = new EntityNode{Entity{{
+    {EntityPropertyKeys::Classname, "func_door"},
+    {"name", "func_door_1"},
+  }}};
+  auto* firstUnnamed =
+    new EntityNode{Entity{{{EntityPropertyKeys::Classname, "func_door"}}}};
+  auto* secondUnnamed =
+    new EntityNode{Entity{{{EntityPropertyKeys::Classname, "func_door"}}}};
+  addNodes(map, {{&parentForNodes(map), {existing, firstUnnamed, secondUnnamed}}});
+
+  REQUIRE(ensureUniqueEntityNames(map));
+  CHECK(*existing->entity().property("name") == "func_door_1");
+  const auto firstGeneratedName = *firstUnnamed->entity().property("name");
+  const auto secondGeneratedName = *secondUnnamed->entity().property("name");
+  const auto generatedNames = std::vector{firstGeneratedName, secondGeneratedName};
+  CHECK(firstGeneratedName != secondGeneratedName);
+  CHECK_THAT(
+    generatedNames,
+    UnorderedEquals(std::vector<std::string>{"func_door_2", "func_door_3"}));
+
+  REQUIRE(ensureUniqueEntityNames(map));
+  CHECK(*firstUnnamed->entity().property("name") == firstGeneratedName);
+  CHECK(*secondUnnamed->entity().property("name") == secondGeneratedName);
+}
+
 } // namespace tb::mdl

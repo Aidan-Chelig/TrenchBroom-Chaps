@@ -52,6 +52,7 @@ TEST_CASE("FgdParser")
       ]
       @PointClass base(Interactive) = logic_signal_action [
         target(entity_ref, requires_interface="actions", color="0.2 0.4 0.8") : "Target"
+        name(target_source, unique=true) : "Name"
         action(endpoint_ref, entity_property="target", interface="actions") : "Action"
       ]
     )";
@@ -77,6 +78,10 @@ TEST_CASE("FgdParser")
       std::get<PropertyValueTypes::EndpointReference>(action->valueType);
     CHECK(endpointReference.entityProperty == "target");
     CHECK(endpointReference.interfaceName == "actions");
+
+    const auto* name = getPropertyDefinition(definitions.front(), "name");
+    REQUIRE(name != nullptr);
+    CHECK(name->requiresUniqueName);
   }
 
   SECTION("Included files")

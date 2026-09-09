@@ -214,11 +214,18 @@ struct PropertyDefinition
   std::string shortDescription;
   std::string longDescription;
   bool readOnly = false;
+  bool requiresUniqueName = false;
 
   static std::optional<std::string> defaultValue(const PropertyDefinition& definition);
 
   kdl_reflect_decl(
-    PropertyDefinition, key, valueType, shortDescription, longDescription, readOnly);
+    PropertyDefinition,
+    key,
+    valueType,
+    shortDescription,
+    longDescription,
+    readOnly,
+    requiresUniqueName);
 };
 
 } // namespace tb::mdl

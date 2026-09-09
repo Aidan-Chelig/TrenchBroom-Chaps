@@ -32,12 +32,15 @@
 #include "mdl/Map_Nodes.h"
 #include "mdl/Map_Selection.h"
 #include "mdl/ModelUtils.h"
+#include "mdl/NodeQueries.h"
 #include "mdl/Transaction.h"
 #include "mdl/WorldNode.h"
 
 #include "kd/contracts.h"
 #include "kd/overload.h"
 #include "kd/string_utils.h"
+
+#include <unordered_set>
 
 namespace tb::mdl
 {
@@ -410,6 +413,89 @@ bool canClearProtectedEntityProperties(const Map& map)
   }
 
   return canUpdateLinkedGroups(kdl::vec_static_cast<Node*>(entityNodes));
+}
+
+bool ensureUniqueEntityNames(Map& map)
+{
+  auto entityNodes = std::vector<EntityNode*>{};
+  for (auto* node : collectDescendants(std::vector<Node*>{&map.worldNode()}))
+  {
+    if (auto* entityNode = dynamic_cast<EntityNode*>(node))
+    {
+      entityNodes.push_back(entityNode);
+    }
+  }
+
+  auto usedNames = std::unordered_set<std::string>{};
+  for (const auto* entityNode : entityNodes)
+  {
+    const auto* definition = entityNode->entity().definition();
+    if (!definition)
+    {
+      continue;
+    }
+
+    for (const auto& propertyDefinition : definition->propertyDefinitions)
+    {
+      if (
+        propertyDefinition.requiresUniqueName
+        || std::holds_alternative<PropertyValueTypes::LinkTarget>(
+          propertyDefinition.valueType))
+      {
+        if (const auto* value = entityNode->entity().property(propertyDefinition.key);
+            value && !value->empty())
+        {
+          usedNames.insert(*value);
+        }
+      }
+    }
+  }
+
+  auto nextSuffix = size_t{1};
+  auto nodesToUpdate = std::vector<std::pair<Node*, NodeContents>>{};
+  for (auto* entityNode : entityNodes)
+  {
+    const auto* definition = entityNode->entity().definition();
+    if (!definition)
+    {
+      continue;
+    }
+
+    auto entity = entityNode->entity();
+    auto changed = false;
+    for (const auto& propertyDefinition : definition->propertyDefinitions)
+    {
+      if (!propertyDefinition.requiresUniqueName)
+      {
+        continue;
+      }
+
+      const auto* currentValue = entity.property(propertyDefinition.key);
+      if (currentValue && !currentValue->empty())
+      {
+        continue;
+      }
+
+      auto generatedName = std::string{};
+      do
+      {
+        generatedName = entity.classname() + "_" + std::to_string(nextSuffix++);
+      } while (usedNames.contains(generatedName));
+
+      usedNames.insert(generatedName);
+      entity.addOrUpdateProperty(propertyDefinition.key, generatedName);
+      changed = true;
+    }
+
+    if (changed)
+    {
+      nodesToUpdate.emplace_back(entityNode, NodeContents{std::move(entity)});
+    }
+  }
+
+  return nodesToUpdate.empty()
+         || updateNodeContents(
+           map, "Generate Unique Entity Names", std::move(nodesToUpdate), {});
 }
 
 void setDefaultEntityProperties(Map& map, const SetDefaultPropertyMode mode)

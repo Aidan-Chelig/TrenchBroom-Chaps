@@ -56,6 +56,9 @@ bool setProtectedEntityProperty(Map& map, const std::string& key, bool value);
 bool clearProtectedEntityProperties(Map& map);
 bool canClearProtectedEntityProperties(const Map& map);
 
+/** Assigns collision-free values to empty properties marked unique. */
+bool ensureUniqueEntityNames(Map& map);
+
 void setDefaultEntityProperties(Map& map, SetDefaultPropertyMode mode);
 
 } // namespace tb::mdl

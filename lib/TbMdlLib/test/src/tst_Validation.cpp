@@ -36,6 +36,7 @@
 #include "mdl/Map_Selection.h"
 #include "mdl/PatchNode.h"
 #include "mdl/TestUtils.h"
+#include "mdl/UniqueEntityNameValidator.h"
 #include "mdl/WorldNode.h"
 #include "mdl/WorldNodePathSeparatorValidator.h"
 
@@ -101,6 +102,36 @@ TEST_CASE("Validation")
   });
 
   const auto& pointEntityDefinition = map.entityDefinitionManager().definitions().front();
+
+  SECTION("UniqueEntityNameValidator")
+  {
+    map.entityDefinitionManager().setDefinitions({
+      {"named_entity",
+       {},
+       {},
+       {{.key = "name",
+         .valueType = PropertyValueTypes::LinkTarget{},
+         .requiresUniqueName = true}},
+       PointEntityDefinition{vm::bbox3d{16.0}, {}, {}}},
+    });
+    const auto& definition = map.entityDefinitionManager().definitions().front();
+
+    auto* first = createPointEntity(map, definition, vm::vec3d{0, 0, 0});
+    auto* second = createPointEntity(map, definition, vm::vec3d{32, 0, 0});
+    auto firstEntity = first->entity();
+    firstEntity.addOrUpdateProperty("name", "duplicate");
+    first->setEntity(std::move(firstEntity));
+    auto secondEntity = second->entity();
+    secondEntity.addOrUpdateProperty("name", "duplicate");
+    second->setEntity(std::move(secondEntity));
+
+    auto validator = std::make_unique<UniqueEntityNameValidator>(map);
+    const auto issues = collectIssues(map.worldNode(), {validator.get()});
+
+    REQUIRE(issues.size() == 2u);
+    CHECK(issues[0]->type() == validator->type());
+    CHECK(issues[1]->type() == validator->type());
+  }
 
   SECTION("EmptyPropertyKeyValidator")
   {
