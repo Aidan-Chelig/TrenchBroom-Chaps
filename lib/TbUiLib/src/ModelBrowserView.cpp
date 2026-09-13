@@ -231,15 +231,15 @@ void ModelBrowserView::renderModels(
 vm::mat4x4f ModelBrowserView::itemTransformation(
   const Cell& cell, const float y, const float height) const
 {
-  const auto& data = cellData(cell);
+  const auto& modelData = cellData(cell);
   const auto offset =
     vm::vec3f{0.0f, cell.itemBounds().left(), height - (cell.itemBounds().bottom() - y)};
-  const auto rotatedBounds = data.bounds.transform(data.transform);
+  const auto rotatedBounds = modelData.bounds.transform(modelData.transform);
   const auto rotationOffset =
     vm::vec3f{0.0f, -rotatedBounds.min.y(), -rotatedBounds.min.z()};
   return vm::translation_matrix(offset)
          * vm::scaling_matrix(vm::vec3f::fill(cell.scale()))
-         * vm::translation_matrix(rotationOffset) * data.transform;
+         * vm::translation_matrix(rotationOffset) * modelData.transform;
 }
 
 void ModelBrowserView::doLeftClick(Layout& layout, const float x, const float y)

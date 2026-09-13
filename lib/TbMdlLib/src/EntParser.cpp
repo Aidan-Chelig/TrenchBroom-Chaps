@@ -280,19 +280,21 @@ auto withDefaultValue(
         }
         return modelPathValueType;
       },
-      [&](PropertyValueTypes::EntityReference valueType) -> PropertyValueType {
+      [&](PropertyValueTypes::EntityReference entityReferenceValueType)
+        -> PropertyValueType {
         if (hasAttribute(element, "value"))
         {
-          valueType.defaultValue = parseString(element, "value");
+          entityReferenceValueType.defaultValue = parseString(element, "value");
         }
-        return valueType;
+        return entityReferenceValueType;
       },
-      [&](PropertyValueTypes::EndpointReference valueType) -> PropertyValueType {
+      [&](PropertyValueTypes::EndpointReference endpointReferenceValueType)
+        -> PropertyValueType {
         if (hasAttribute(element, "value"))
         {
-          valueType.defaultValue = parseString(element, "value");
+          endpointReferenceValueType.defaultValue = parseString(element, "value");
         }
-        return valueType;
+        return endpointReferenceValueType;
       },
       [&](PropertyValueTypes::Boolean booleanValueType) -> PropertyValueType {
         if (hasAttribute(element, "value"))
