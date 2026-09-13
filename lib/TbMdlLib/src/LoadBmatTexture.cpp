@@ -265,10 +265,15 @@ Result<gl::Texture> decodeKtx2(const std::span<const uint8_t> bytes)
     }
   }
 
+  // Must be computed before buffers is moved from: MSVC evaluates the initializers of
+  // the braced-init-list below out of order, so reading buffers there yields a null
+  // data pointer.
+  const auto averageColor = getAverageColor(buffers.front(), GL_RGBA);
+
   auto texture = gl::Texture{
     width,
     height,
-    getAverageColor(buffers.front(), GL_RGBA),
+    averageColor,
     GL_RGBA,
     gl::NoEmbeddedDefaults{},
     std::move(buffers)};
