@@ -252,6 +252,11 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD")
     set_target_properties(TrenchBroom PROPERTIES OUTPUT_NAME ${APP_TARGET_NAME_LOWER})
 endif()
 
+if(WIN32)
+    # This fork is branded as TrenchBroom CHAPS
+    set_target_properties(TrenchBroom PROPERTIES OUTPUT_NAME "TrenchBroom CHAPS")
+endif()
+
 function(tb_add_post_build_copy_directory target source destination)
     if(NOT target)
         message(FATAL_ERROR "tb_add_post_build_copy_directory: target is required")
