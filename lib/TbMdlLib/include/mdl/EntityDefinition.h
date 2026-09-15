@@ -43,8 +43,10 @@ struct PointEntityDefinition
   vm::bbox3d bounds;
   ModelDefinition modelDefinition;
   DecalDefinition decalDefinition;
+  bool useModelBounds = false;
 
-  kdl_reflect_decl(PointEntityDefinition, bounds, modelDefinition, decalDefinition);
+  kdl_reflect_decl(
+    PointEntityDefinition, bounds, modelDefinition, decalDefinition, useModelBounds);
 };
 
 struct EntityDefinition

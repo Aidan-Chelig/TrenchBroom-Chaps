@@ -2456,6 +2456,22 @@ instead of having to write
 
 If the model expression has a scale expression, then its result is used as the scale value for the model. If the expression cannot be evaluated, or if no such expression is given, then the default scale expression from the game configuration is evaluated instead. Refer to [this section](#game_configuration_files_entities) for more information about `SCALE_EXPRESSION` and the default scale expression.
 
+#### Using Model Bounds for Props
+
+Add `modelbounds(1)` to an FGD point class to use the selected model frame's bounding box as the entity bounds:
+
+```fgd
+@PointClass model({ "path": model, "scale": modelscale }) modelbounds(1) = prop_model : "Model prop"
+[
+    model(modelpath) : "Model"
+    modelscale(string) : "Scale" : "1"
+]
+```
+
+The displayed box follows the model's origin, rotation, and scale, including nonuniform scale. The editor uses the enclosing axis-aligned box for spatial indexing and selection bounds. Changing the model or its frame updates the box. If no model frame is available, the entity falls back to its `size(...)` bounds (or the default box).
+
+This option is inherited from FGD base classes. Use `modelbounds(0)` to override an inherited setting. In ENT files, add `modelbounds="true"` to the `<point>` element; `modelbounds="false"` keeps the usual fixed box. This controls editor bounds; it does not generate collision geometry in the map.
+
 #### Basic Examples
 
 So a valid model definitions might look like this:

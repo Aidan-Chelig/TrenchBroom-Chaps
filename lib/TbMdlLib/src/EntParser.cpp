@@ -758,6 +758,22 @@ EntityDefinitionClassInfo parsePointClassInfo(
   classInfo.color = parseColor(element, "color");
   classInfo.size = parseBounds(element, "box", status);
   classInfo.modelDefinition = parseModel(element);
+  if (hasAttribute(element, "modelbounds"))
+  {
+    const auto value = parseString(element, "modelbounds");
+    if (kdl::ci::str_is_equal(value, "true") || value == "1")
+    {
+      classInfo.useModelBounds = true;
+    }
+    else if (kdl::ci::str_is_equal(value, "false") || value == "0")
+    {
+      classInfo.useModelBounds = false;
+    }
+    else
+    {
+      warn(element, "Expected true or false for modelbounds", status);
+    }
+  }
   parsePropertyDefinitions(element, propertyDeclarations, classInfo, status);
 
   return classInfo;

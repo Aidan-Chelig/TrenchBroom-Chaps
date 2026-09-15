@@ -41,6 +41,23 @@ namespace tb::mdl
 
 TEST_CASE("FgdParser")
 {
+  SECTION("model bounds")
+  {
+    const auto file = R"(
+      @BaseClass modelbounds(1) = ModelProp []
+      @PointClass base(ModelProp) model({ "path": model }) = prop []
+      @PointClass base(ModelProp) modelbounds(0) = fixed_prop []
+      @PointClass = ordinary []
+    )";
+    auto parser = FgdParser{file, RgbaF{1, 1, 1, 1}};
+    auto status = TestParserStatus{};
+    const auto definitions = parser.parseDefinitions(status) | kdl::value();
+    REQUIRE(definitions.size() == 3u);
+    CHECK(definitions[0].pointEntityDefinition->useModelBounds);
+    CHECK_FALSE(definitions[1].pointEntityDefinition->useModelBounds);
+    CHECK_FALSE(definitions[2].pointEntityDefinition->useModelBounds);
+  }
+
   SECTION("interfaces and references")
   {
     const auto file = R"(

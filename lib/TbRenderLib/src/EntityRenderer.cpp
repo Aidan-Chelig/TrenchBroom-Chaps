@@ -470,8 +470,10 @@ void EntityRenderer::validateBounds()
         const auto pointEntity = !entityNode->hasChildren();
         if (pointEntity)
         {
-          entityNode->logicalBounds().for_each_edge(
-            makeWireFrameBoundsVertexBuilder(pointEntityWireframeVertices));
+          for (const auto& vertex : entityNode->boundsEdgeVertices())
+          {
+            pointEntityWireframeVertices.emplace_back(vm::vec3f{vertex});
+          }
 
           const auto hasModel =
             entityNode->entity().model() && entityNode->entity().model()->data();
@@ -512,9 +514,11 @@ void EntityRenderer::validateBounds()
         const auto isPointEntity = !entityNode->hasChildren();
         if (isPointEntity)
         {
-          entityNode->logicalBounds().for_each_edge(
-            makeColoredWireFrameBoundsVertexBuilder(
-              pointEntityWireframeVertices, boundsColor(*entityNode)));
+          for (const auto& vertex : entityNode->boundsEdgeVertices())
+          {
+            pointEntityWireframeVertices.emplace_back(
+              vm::vec3f{vertex}, boundsColor(*entityNode).to<RgbaF>().toVec());
+          }
 
           const auto hasModel =
             entityNode->entity().model() && entityNode->entity().model()->data();

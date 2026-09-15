@@ -389,6 +389,18 @@ EntityDefinitionClassInfo FgdParser::parseClassInfo(
       }
       classInfo.color = parseColor();
     }
+    else if (kdl::ci::str_is_equal(typeName, "modelbounds"))
+    {
+      m_tokenizer.nextToken(FgdToken::OParenthesis);
+      const auto value = m_tokenizer.nextToken(FgdToken::Integer);
+      if (value.data() != "0" && value.data() != "1")
+      {
+        throw ParserException{
+          value.location(), "Expected modelbounds(0) or modelbounds(1)"};
+      }
+      classInfo.useModelBounds = value.data() == "1";
+      m_tokenizer.nextToken(FgdToken::CParenthesis);
+    }
     else if (kdl::ci::str_is_equal(typeName, "size"))
     {
       if (classInfo.size)

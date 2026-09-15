@@ -27,6 +27,7 @@
 #include "vm/bbox.h"
 #include "vm/util.h"
 
+#include <array>
 #include <optional>
 #include <vector>
 
@@ -58,6 +59,11 @@ public:
 public: // entity model
   const vm::bbox3d& modelBounds() const;
   void setModel(const EntityModel* model);
+
+  bool usesModelBounds() const;
+  // World-space endpoints of the displayed box's twelve edges. Model bounds retain
+  // their orientation; logicalBounds() is their axis-aligned enclosure.
+  std::array<vm::vec3d, 24> boundsEdgeVertices() const;
 
 private: // implement Node interface
   const vm::bbox3d& doGetLogicalBounds() const override;

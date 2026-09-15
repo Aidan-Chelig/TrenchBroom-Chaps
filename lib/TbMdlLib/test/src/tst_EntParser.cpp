@@ -37,6 +37,26 @@ namespace tb::mdl
 
 TEST_CASE("EntParser")
 {
+  SECTION("model bounds")
+  {
+    const auto file = R"(
+      <classes>
+        <point name="prop" color="1 1 1" box="-8 -8 -8 8 8 8"
+               modelbounds="true" model="props/chair.glb" />
+        <point name="fixed_prop" color="1 1 1" box="-8 -8 -8 8 8 8"
+               modelbounds="false" />
+        <point name="ordinary" color="1 1 1" box="-8 -8 -8 8 8 8" />
+      </classes>
+    )";
+    auto parser = EntParser{file, RgbaF{1, 1, 1, 1}};
+    auto status = TestParserStatus{};
+    const auto definitions = parser.parseDefinitions(status) | kdl::value();
+    REQUIRE(definitions.size() == 3u);
+    CHECK(definitions[0].pointEntityDefinition->useModelBounds);
+    CHECK_FALSE(definitions[1].pointEntityDefinition->useModelBounds);
+    CHECK_FALSE(definitions[2].pointEntityDefinition->useModelBounds);
+  }
+
   SECTION("Included files")
   {
     const auto basePath = getFixtureRoot() / "games/";

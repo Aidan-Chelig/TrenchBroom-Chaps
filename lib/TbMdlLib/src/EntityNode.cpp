@@ -52,6 +52,37 @@ EntityNode::EntityNode(Entity entity)
 {
 }
 
+bool EntityNode::usesModelBounds() const
+{
+  const auto* definition = getPointEntityDefinition(m_entity.definition());
+  return !hasChildren() && definition && definition->useModelBounds
+         && m_entity.modelFrame();
+}
+
+std::array<vm::vec3d, 24> EntityNode::boundsEdgeVertices() const
+{
+  auto vertices = std::array<vm::vec3d, 24>{};
+  auto index = size_t{0};
+  if (usesModelBounds())
+  {
+    const auto& transform =
+      m_entity.modelTransformation(entityPropertyConfig().defaultModelScaleExpression);
+    vm::bbox3d{m_entity.modelFrame()->bounds()}.for_each_edge(
+      [&](const auto& start, const auto& end) {
+        vertices[index++] = transform * start;
+        vertices[index++] = transform * end;
+      });
+  }
+  else
+  {
+    logicalBounds().for_each_edge([&](const auto& start, const auto& end) {
+      vertices[index++] = start;
+      vertices[index++] = end;
+    });
+  }
+  return vertices;
+}
+
 const vm::bbox3d& EntityNode::modelBounds() const
 {
   validateBounds();
@@ -159,13 +190,32 @@ void EntityNode::doPick(
 {
   if (!hasChildren() && editorContext.visible(*this))
   {
-    const auto& myBounds = logicalBounds();
-    if (!myBounds.contains(ray.origin))
+    auto boundsRay = ray;
+    auto boundsTransform = vm::mat4x4d::identity();
+    auto myBounds = logicalBounds();
+    if (usesModelBounds())
     {
-      if (const auto distance = vm::intersect_ray_bbox(ray, myBounds))
+      boundsTransform =
+        m_entity.modelTransformation(entityPropertyConfig().defaultModelScaleExpression);
+      if (const auto inverse = vm::invert(boundsTransform))
       {
-        const auto hitPoint = vm::point_at_distance(ray, *distance);
-        pickResult.addHit(Hit(EntityHitType, *distance, hitPoint, this));
+        boundsRay = ray.transform(*inverse);
+        myBounds = vm::bbox3d{m_entity.modelFrame()->bounds()};
+      }
+      else
+      {
+        // A zero scale has no invertible model space; use the enclosing bounds.
+        boundsTransform = vm::mat4x4d::identity();
+      }
+    }
+    if (!myBounds.contains(boundsRay.origin))
+    {
+      if (const auto distance = vm::intersect_ray_bbox(boundsRay, myBounds))
+      {
+        const auto hitPoint =
+          boundsTransform * vm::point_at_distance(boundsRay, *distance);
+        pickResult.addHit(
+          Hit(EntityHitType, vm::length(hitPoint - ray.origin), hitPoint, this));
         return;
       }
     }
@@ -304,7 +354,9 @@ void EntityNode::validateBounds() const
     const auto definitionBounds =
       pointEntityDefinition ? pointEntityDefinition->bounds : DefaultBounds;
 
-    m_cachedBounds->logicalBounds = definitionBounds.translate(m_entity.origin());
+    m_cachedBounds->logicalBounds = usesModelBounds()
+                                      ? m_cachedBounds->modelBounds
+                                      : definitionBounds.translate(m_entity.origin());
     if (hasModel)
     {
       m_cachedBounds->physicalBounds =

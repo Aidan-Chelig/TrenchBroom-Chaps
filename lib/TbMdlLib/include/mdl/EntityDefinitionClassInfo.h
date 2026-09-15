@@ -63,6 +63,7 @@ struct EntityDefinitionClassInfo
   std::vector<PropertyDefinition> propertyDefinitions;
   std::vector<std::string> superClasses;
   std::vector<EntityInterfaceDefinition> interfaces;
+  std::optional<bool> useModelBounds = std::nullopt;
 
   kdl_reflect_decl(
     EntityDefinitionClassInfo,
@@ -76,7 +77,8 @@ struct EntityDefinitionClassInfo
     decalDefinition,
     propertyDefinitions,
     superClasses,
-    interfaces);
+    interfaces,
+    useModelBounds);
 };
 
 bool addPropertyDefinition(

@@ -18,6 +18,7 @@
  */
 
 #include "TestLogger.h"
+#include "TestParserStatus.h"
 #include "gl/Material.h"
 #include "mdl/BezierPatch.h"
 #include "mdl/Brush.h"
@@ -32,6 +33,7 @@
 #include "mdl/EntityProperties.h"
 #include "mdl/EntityRotation.h"
 #include "mdl/EnvironmentConfig.h"
+#include "mdl/FgdParser.h"
 #include "mdl/GameConfigFixture.h"
 #include "mdl/GameFileSystem.h"
 #include "mdl/Group.h"
@@ -52,6 +54,7 @@
 #include "vm/util.h"
 #include "vm/vec.h"
 
+#include <cmath>
 #include <filesystem>
 #include <string>
 
@@ -64,6 +67,88 @@ TEST_CASE("EntityNode")
 {
   constexpr auto worldBounds = vm::bbox3d{8192.0};
   constexpr auto mapFormat = MapFormat::Quake3;
+
+  SECTION("model bounds")
+  {
+    auto parser = FgdParser{
+      R"(
+      @PointClass size(-8 -8 -8, 8 8 8)
+        model({ "path": model, "scale": modelscale, "frame": frame })
+        modelbounds(1) = prop []
+    )",
+      RgbaF{1, 1, 1, 1}};
+    auto status = TestParserStatus{};
+    auto definitions = parser.parseDefinitions(status) | kdl::value();
+    REQUIRE(definitions.size() == 1u);
+
+    auto modelData = EntityModelData{PitchType::Normal, Orientation::Oriented};
+    modelData.addFrame("first", vm::bbox3f{{0, 0, 0}, {2, 4, 6}});
+    modelData.addFrame("second", vm::bbox3f{{0, 0, 0}, {4, 8, 12}});
+    auto model =
+      EntityModel{"model", createEntityModelDataResource(std::move(modelData))};
+    auto node = EntityNode{Entity{
+      {{"classname", "prop"},
+       {"model", "model"},
+       {"frame", "0"},
+       {"origin", "10 20 30"},
+       {"angles", "0 90 0"},
+       {"modelscale", "2 3 4"}}}};
+    node.setDefinition(&definitions.front());
+
+    SECTION("missing model falls back to the definition bounds")
+    {
+      CHECK_FALSE(node.usesModelBounds());
+      CHECK(node.logicalBounds() == vm::bbox3d{{2, 12, 22}, {18, 28, 38}});
+    }
+
+    SECTION("model bounds follow translation rotation and nonuniform scale")
+    {
+      node.setModel(&model);
+      REQUIRE(node.usesModelBounds());
+      CHECK(vm::approx{vm::bbox3d{{-2, 20, 30}, {10, 24, 54}}} == node.logicalBounds());
+      CHECK(node.physicalBounds() == node.logicalBounds());
+      CHECK(node.boundsEdgeVertices()[0] == vm::approx{vm::vec3d{-2, 24, 54}});
+      auto pickResult = PickResult{};
+      node.pick(EditorContext{}, vm::ray3d{{0, 22, 100}, {0, 0, -1}}, pickResult);
+      REQUIRE(pickResult.size() == 1u);
+      CHECK(pickResult.all().front().hitPoint() == vm::approx{vm::vec3d{0, 22, 54}});
+      CHECK(pickResult.all().front().distance() == vm::approx{46.0});
+
+      auto entity = node.entity();
+      entity.addOrUpdateProperty("frame", "1");
+      node.setEntity(std::move(entity));
+      CHECK(vm::approx{vm::bbox3d{{-14, 20, 30}, {10, 28, 78}}} == node.logicalBounds());
+
+      node.setModel(nullptr);
+      CHECK_FALSE(node.usesModelBounds());
+      CHECK(node.logicalBounds() == vm::bbox3d{{2, 12, 22}, {18, 28, 38}});
+    }
+
+    SECTION("displayed edges rotate with the model")
+    {
+      auto entity = node.entity();
+      entity.addOrUpdateProperty("angles", "0 45 0");
+      node.setEntity(std::move(entity));
+      node.setModel(&model);
+      const auto vertices = node.boundsEdgeVertices();
+      // A rotated edge has both X and Y components, unlike the enclosing AABB.
+      CHECK(std::abs(vertices[0].x() - vertices[1].x()) > 1.0);
+      CHECK(std::abs(vertices[0].y() - vertices[1].y()) > 1.0);
+
+      auto pickResult = PickResult{};
+      // This ray passes through an empty corner of the enclosing axis-aligned box.
+      node.pick(EditorContext{}, vm::ray3d{{2, 21, 100}, {0, 0, -1}}, pickResult);
+      CHECK(pickResult.size() == 0u);
+    }
+
+    SECTION("ordinary definitions retain their fixed bounds")
+    {
+      definitions.front().pointEntityDefinition->useModelBounds = false;
+      node.setModel(&model);
+      CHECK_FALSE(node.usesModelBounds());
+      CHECK(node.logicalBounds() == vm::bbox3d{{2, 12, 22}, {18, 28, 38}});
+    }
+  }
 
   SECTION("canAddChild")
   {
