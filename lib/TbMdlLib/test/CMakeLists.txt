@@ -97,6 +97,8 @@ target_sources(TbMdlLibTest PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_ParseGameConfig.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_ParseGameEngineConfig.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_PatchNode.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_Path.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_PathEntity.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_PatchUtils.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_PickResult.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_PointTrace.cpp
