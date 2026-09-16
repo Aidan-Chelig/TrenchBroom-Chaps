@@ -25,7 +25,11 @@ namespace tb::render
 {
 TEST_CASE("PathRenderData")
 {
-  auto entity = mdl::Entity{{{"classname", "camera_route"}, {"origin", "999 999 999"}}};
+  auto entity = mdl::Entity{{
+    {"classname", "camera_route"},
+    {"origin", "999 999 999"},
+    {"angles", "0 90 0"},
+  }};
   auto path = mdl::Path{};
   path.nodes = {
     mdl::PathNode{{0, 0, 0}},
@@ -44,22 +48,23 @@ TEST_CASE("PathRenderData")
     CHECK_FALSE(makePathRenderData(entity).has_value());
   }
 
-  SECTION("curves use world coordinates and update when properties change")
+  SECTION("curves transform local coordinates and update when properties change")
   {
     REQUIRE(mdl::writePath(entity, path));
     const auto geometry = makePathRenderData(entity);
     REQUIRE(geometry.has_value());
-    CHECK(geometry->nodes.front() == vm::vec3f{0, 0, 0});
+    CHECK(geometry->nodes.front() == vm::vec3f{999, 999, 999});
+    CHECK(geometry->nodes[1] == vm::vec3f{935, 1063, 999});
     CHECK(geometry->curve.front() == geometry->nodes.front());
     CHECK(geometry->curve.back() == geometry->nodes.back());
-    CHECK(geometry->curve[16] == vm::approx{vm::vec3f{path.sample(0.25)}});
+    CHECK(geometry->curve[16] == vm::approx{vm::vec3f{963, 1027, 999}});
     CHECK(geometry->handles.empty());
     CHECK_FALSE(geometry->arrows.empty());
 
     entity.addOrUpdateProperty("point_2", "256 0 0");
     const auto changed = makePathRenderData(entity);
     REQUIRE(changed.has_value());
-    CHECK(changed->curve.back() == vm::vec3f{256, 0, 0});
+    CHECK(changed->curve.back() == vm::vec3f{999, 1255, 999});
   }
 
   SECTION("closed linear paths include the closing edge")
@@ -84,11 +89,13 @@ TEST_CASE("PathRenderData")
     const auto geometry = makePathRenderData(entity);
     REQUIRE(geometry.has_value());
     REQUIRE(geometry->handles.size() == 4u);
-    CHECK(geometry->handles[0] == vm::vec3f{0, 64, 32});
-    CHECK(geometry->handles[1] == vm::approx{vm::vec3f{64.0f - 128.0f / 6.0f, 64, 0}});
+    CHECK(geometry->handles[0] == vm::vec3f{935, 999, 1031});
+    CHECK(
+      geometry->handles[1]
+      == vm::approx{vm::vec3f{935, 999 + 64.0f - 128.0f / 6.0f, 999}});
     CHECK(geometry->handleLines[0] == geometry->nodes[0]);
     CHECK(geometry->handleLines[1] == geometry->handles[0]);
-    CHECK(geometry->curve[16] == vm::approx{vm::vec3f{path.sample(0.25)}});
+    CHECK(geometry->curve[16] == vm::approx{vm::vec3f{943, 1023, 1011}});
   }
 
   SECTION("empty and coincident paths produce no invalid arrows")

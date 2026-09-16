@@ -29,11 +29,13 @@
 #include "mdl/LayerNode.h"
 #include "mdl/Node.h"
 #include "mdl/PatchNode.h"
+#include "mdl/PathEntity.h"
 #include "mdl/WorldNode.h"
 
 #include "kd/ranges/zip_transform_view.h"
 #include "kd/reflection_impl.h"
 
+#include "vm/mat_ext.h"
 #include "vm/polygon_io.h" // IWYU pragma: keep
 #include "vm/segment_io.h" // IWYU pragma: keep
 #include "vm/vec_io.h"     // IWYU pragma: keep
@@ -242,7 +244,17 @@ std::vector<ControlPointHandle> ControlPointHandle::getHandles(const Node& node)
     [](const WorldNode&) {},
     [](const LayerNode&) {},
     [](const GroupNode&) {},
-    [](const EntityNode&) {},
+    [&](const EntityNode& entityNode) {
+      if (const auto path = readPath(entityNode.entity()))
+      {
+        const auto transform =
+          vm::translation_matrix(entityNode.entity().origin()) * entityNode.entity().rotation();
+        for (const auto& pathNode : path.value().nodes)
+        {
+          result.emplace_back(vm::vec3d{transform * pathNode.position});
+        }
+      }
+    },
     [](const BrushNode&) {},
     [&](const PatchNode& patchNode) {
       for (const auto& controlPoint : patchNode.patch().controlPoints())

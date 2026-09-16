@@ -17,6 +17,8 @@
 #include "mdl/Entity.h"
 #include "mdl/PathEntity.h"
 
+#include "vm/mat_ext.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -33,7 +35,10 @@ std::optional<PathRenderData> makePathRenderData(const mdl::Entity& entity)
   {
     return std::nullopt;
   }
-  const auto& path = parsed.value();
+  // Path control points are authored in the entity's local space. This matches
+  // normal entity transforms and the game runtime's map import convention.
+  const auto transform = vm::translation_matrix(entity.origin()) * entity.rotation();
+  const auto path = parsed.value().transformed(transform);
   auto result = PathRenderData{};
   result.closed = path.closed;
   for (const auto& node : path.nodes)

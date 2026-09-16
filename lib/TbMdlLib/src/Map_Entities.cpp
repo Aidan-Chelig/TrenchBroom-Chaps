@@ -190,8 +190,7 @@ EntityNode* createPointEntity(
             }
           }
           path.closed = pathEntity.hasProperty("closed", "1");
-          const auto origin = pathEntity.origin();
-          path.nodes = {PathNode{origin}, PathNode{origin + vm::vec3d{64, 0, 0}}};
+          path.nodes = {PathNode{}, PathNode{vm::vec3d{64, 0, 0}}};
           return static_cast<bool>(writePath(pathEntity, path));
         },
         [](Brush&) { return true; },

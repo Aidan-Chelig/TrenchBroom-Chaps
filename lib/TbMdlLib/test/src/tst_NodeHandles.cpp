@@ -30,6 +30,7 @@
 #include "mdl/Hit.h"
 #include "mdl/NodeHandles.h"
 #include "mdl/PatchNode.h"
+#include "mdl/PathEntity.h"
 
 #include "vm/bbox.h"
 #include "vm/ray.h"
@@ -258,6 +259,25 @@ TEST_CASE("FaceHandle")
 
 TEST_CASE("ControlPointHandle")
 {
+  SECTION("path entities expose transformed path nodes")
+  {
+    auto entity = Entity{{
+      {"classname", "path"},
+      {"path_version", "1"},
+      {"path_type", "linear"},
+      {"closed", "0"},
+      {"point_count", "2"},
+      {"point_0", "0 0 0"},
+      {"point_1", "64 0 0"},
+      {"origin", "100 200 300"},
+      {"angles", "0 90 0"},
+    }};
+    const auto handles = ControlPointHandle::getHandles(EntityNode{std::move(entity)});
+    REQUIRE(handles.size() == 2u);
+    CHECK(handles[0].position == vm::vec3d{100, 200, 300});
+    CHECK(handles[1].position == vm::vec3d{100, 264, 300});
+  }
+
   // clang-format off
   auto patchNode = PatchNode{BezierPatch{3, 3, {
     {-16, -16, -16, 0, 0}, {  0, -16, -16, 0, 0}, { 16, -16, -16, 0, 0},

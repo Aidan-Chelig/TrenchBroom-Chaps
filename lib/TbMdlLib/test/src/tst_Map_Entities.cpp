@@ -130,8 +130,8 @@ TEST_CASE("Map_Entities")
       const auto decoded = readPath(entityNode->entity());
       REQUIRE(static_cast<bool>(decoded));
       REQUIRE(decoded.value().nodes.size() == 2u);
-      CHECK(decoded.value().nodes[0].position == vm::vec3d{128, 256, 64});
-      CHECK(decoded.value().nodes[1].position == vm::vec3d{192, 256, 64});
+      CHECK(decoded.value().nodes[0].position == vm::vec3d{0, 0, 0});
+      CHECK(decoded.value().nodes[1].position == vm::vec3d{64, 0, 0});
       CHECK(entityNode->entity().hasProperty("path_version", "1"));
       CHECK(entityNode->entity().hasProperty(
         "path_type", kind.empty() ? "catmull_rom" : kind));
@@ -141,8 +141,8 @@ TEST_CASE("Map_Entities")
       map.redoCommand();
       const auto restored = readPath(entityNode->entity());
       REQUIRE(static_cast<bool>(restored));
-      CHECK(restored.value().nodes[0].position == vm::vec3d{128, 256, 64});
-      CHECK(restored.value().nodes[1].position == vm::vec3d{192, 256, 64});
+      CHECK(restored.value().nodes[0].position == vm::vec3d{0, 0, 0});
+      CHECK(restored.value().nodes[1].position == vm::vec3d{64, 0, 0});
     }
 
     SECTION("path creation preserves authored point defaults and unsupported versions")

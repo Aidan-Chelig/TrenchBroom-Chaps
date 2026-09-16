@@ -70,11 +70,11 @@ Counts range from 0 to 65536; indices must be contiguous and start at zero.
 An empty path is permitted while authoring. Runtime consumers should require at
 least two nodes before starting movement.
 
-Positions and handles are **absolute world coordinates**, not offsets from the
-entity origin or from the node. Moving a handle therefore means updating its
-stored world position. The future entity-transform integration must transform
-these properties along with the entity; generic entity transforms currently
-leave them alone.
+Positions and handles are **local coordinates relative to the entity origin**.
+The editor displays them after applying the entity's translation, rotation, and
+scale. The game runtime should apply the same entity transform when importing
+the path. Moving the entity therefore moves the whole path without rewriting
+every stored point.
 
 Each position has exactly three finite numbers. Missing positions, duplicate
 path properties, out-of-range indices, malformed handles, unknown modes/types,

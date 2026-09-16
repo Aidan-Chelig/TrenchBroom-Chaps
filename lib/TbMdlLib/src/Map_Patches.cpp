@@ -29,6 +29,7 @@
 #include "mdl/ModelUtils.h"
 #include "mdl/PatchNode.h"
 #include "mdl/PatchUtils.h"
+#include "mdl/PathEntity.h"
 #include "mdl/Selection.h"
 #include "mdl/Transaction.h"
 
@@ -36,6 +37,8 @@
 #include "kd/ranges/to.h"
 #include "kd/string_format.h"
 #include "kd/vector_utils.h"
+
+#include "vm/mat_ext.h"
 
 #include <ranges>
 
@@ -126,6 +129,49 @@ bool transformControlPoints(
   const std::vector<vm::vec3d>& controlPointPositions,
   const vm::mat4x4d& transform)
 {
+  const auto hasPathEntity = std::ranges::any_of(
+    map.selection().allEntities(),
+    [](const auto* entityNode) { return readPath(entityNode->entity()).is_success(); });
+  if (hasPathEntity)
+  {
+    const auto positions =
+      std::set<vm::vec3d>{controlPointPositions.begin(), controlPointPositions.end()};
+    return applyAndSwap(
+      map,
+      "Move Path Control Points",
+      map.selection().allEntities(),
+      collectContainingGroups(kdl::vec_static_cast<Node*>(map.selection().allEntities())),
+      kdl::overload(
+        [&](Entity& entity) {
+          const auto pathResult = readPath(entity);
+          if (!pathResult)
+          {
+            return true;
+          }
+          auto path = pathResult.value();
+          const auto entityTransform =
+            vm::translation_matrix(entity.origin()) * entity.rotation();
+          const auto inverseTransform = vm::invert(entityTransform);
+          if (!inverseTransform)
+          {
+            return false;
+          }
+          for (auto& node : path.nodes)
+          {
+            const auto worldPosition = entityTransform * node.position;
+            if (positions.contains(worldPosition))
+            {
+              node.position = *inverseTransform * (transform * worldPosition);
+            }
+          }
+          return writePath(entity, path).is_success();
+        },
+        [](Layer&) { return true; },
+        [](Group&) { return true; },
+        [](Brush&) { return true; },
+        [](BezierPatch&) { return true; }));
+  }
+
   const auto controlPointPositionSet =
     std::set<vm::vec3d>{controlPointPositions.begin(), controlPointPositions.end()};
 
