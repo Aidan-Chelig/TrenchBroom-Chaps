@@ -14,6 +14,7 @@ target_sources(TbAppLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ClipTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ClipToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ControlPointTool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PathTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ControlPointToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CreateBrushesToolBase.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CreateEntityTool.cpp
@@ -83,6 +84,7 @@ target_sources(TbAppLib
       ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ClipTool.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ClipToolController.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ControlPointTool.h
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PathTool.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ControlPointToolController.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/CreateBrushesToolBase.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/CreateEntityTool.h

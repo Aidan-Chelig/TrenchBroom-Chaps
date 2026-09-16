@@ -54,6 +54,7 @@
 #include "ui/MapDocument.h"
 #include "ui/MapViewToolBox.h"
 #include "ui/MoveObjectsToolController.h"
+#include "ui/PathTool.h"
 #include "ui/RotateToolController.h"
 #include "ui/ScaleToolController.h"
 #include "ui/SelectionTool.h"
@@ -140,6 +141,7 @@ void MapView2D::initializeToolChain(MapViewToolBox& toolBox)
   addToolController(std::make_unique<FaceToolController>(toolBox.faceTool()));
   addToolController(
     std::make_unique<ControlPointToolController>(toolBox.controlPointTool()));
+  addToolController(std::make_unique<ControlPointToolController>(toolBox.pathTool()));
   addToolController(
     std::make_unique<CreateEntityToolController2D>(toolBox.createEntityTool()));
   addToolController(std::make_unique<SelectionTool>(m_document));

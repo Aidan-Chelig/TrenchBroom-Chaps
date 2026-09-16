@@ -53,6 +53,7 @@ class VertexTool;
 class EdgeTool;
 class FaceTool;
 class ControlPointTool;
+class PathTool;
 
 class MapViewToolBox : public ToolBox
 {
@@ -74,6 +75,7 @@ private:
   std::unique_ptr<EdgeTool> m_edgeTool;
   std::unique_ptr<FaceTool> m_faceTool;
   std::unique_ptr<ControlPointTool> m_controlPointTool;
+  std::unique_ptr<PathTool> m_pathTool;
 
   QWidget* m_emptyToolPage = nullptr;
   QWidget* m_rotateToolPage = nullptr;
@@ -131,6 +133,9 @@ public: // tools
   const ControlPointTool& controlPointTool() const;
   ControlPointTool& controlPointTool();
 
+  const PathTool& pathTool() const;
+  PathTool& pathTool();
+
   bool canToggleAssembleBrushTool() const;
   void toggleAssembleBrushTool();
   bool assembleBrushToolActive() const;
@@ -182,6 +187,10 @@ public: // tools
   bool canToggleControlPointTool() const;
   void toggleControlPointTool();
   bool controlPointToolActive() const;
+
+  bool canTogglePathTool() const;
+  void togglePathTool();
+  bool pathToolActive() const;
 
   bool anyModalToolActive() const;
 

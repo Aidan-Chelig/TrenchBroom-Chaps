@@ -37,6 +37,7 @@
 #include "ui/FaceTool.h"
 #include "ui/MapDocument.h"
 #include "ui/MoveObjectsTool.h"
+#include "ui/PathTool.h"
 #include "ui/RotateTool.h"
 #include "ui/RotateToolPage.h"
 #include "ui/ScaleTool.h"
@@ -193,6 +194,16 @@ const ControlPointTool& MapViewToolBox::controlPointTool() const
 ControlPointTool& MapViewToolBox::controlPointTool()
 {
   return KDL_CONST_OVERLOAD(controlPointTool());
+}
+
+const PathTool& MapViewToolBox::pathTool() const
+{
+  return *m_pathTool;
+}
+
+PathTool& MapViewToolBox::pathTool()
+{
+  return KDL_CONST_OVERLOAD(pathTool());
 }
 
 bool MapViewToolBox::canToggleAssembleBrushTool() const
@@ -402,7 +413,7 @@ bool MapViewToolBox::anyVertexToolActive() const
 
 bool MapViewToolBox::anyNodeHandleToolActive() const
 {
-  return anyVertexToolActive() || controlPointToolActive();
+  return anyVertexToolActive() || controlPointToolActive() || pathToolActive();
 }
 
 void MapViewToolBox::toggleVertexTool()
@@ -447,8 +458,25 @@ bool MapViewToolBox::faceToolActive() const
 bool MapViewToolBox::canToggleControlPointTool() const
 {
   const auto& map = m_document.map();
-  return controlPointToolActive() || map.selection().hasOnlyPatches()
-         || map.selection().hasEntities();
+  return controlPointToolActive() || map.selection().hasOnlyPatches();
+}
+
+bool MapViewToolBox::canTogglePathTool() const
+{
+  return pathToolActive() || m_document.map().selection().hasEntities();
+}
+
+void MapViewToolBox::togglePathTool()
+{
+  if (canTogglePathTool())
+  {
+    toggleTool(pathTool());
+  }
+}
+
+bool MapViewToolBox::pathToolActive() const
+{
+  return m_pathTool->active();
 }
 
 void MapViewToolBox::toggleControlPointTool()
@@ -486,7 +514,7 @@ void MapViewToolBox::moveNodeHandles(const vm::vec3d& delta)
   {
     faceTool().moveSelection(delta);
   }
-  else if (controlPointToolActive())
+  else if (controlPointToolActive() || pathToolActive())
   {
     controlPointTool().moveSelection(delta);
   }
@@ -510,6 +538,7 @@ void MapViewToolBox::createTools(QStackedLayout* bookCtrl)
   m_edgeTool = std::make_unique<EdgeTool>(m_document);
   m_faceTool = std::make_unique<FaceTool>(m_document);
   m_controlPointTool = std::make_unique<ControlPointTool>(m_document);
+  m_pathTool = std::make_unique<PathTool>(m_document);
 
   addExclusiveToolGroup(
     assembleBrushTool(),
@@ -518,6 +547,7 @@ void MapViewToolBox::createTools(QStackedLayout* bookCtrl)
     scaleTool(),
     shearTool(),
     controlPointTool(),
+    pathTool(),
     edgeTool(),
     faceTool(),
     clipTool());
@@ -528,6 +558,7 @@ void MapViewToolBox::createTools(QStackedLayout* bookCtrl)
     edgeTool(),
     faceTool(),
     controlPointTool(),
+    pathTool(),
     clipTool());
 
   suppressWhileActive(
@@ -541,6 +572,7 @@ void MapViewToolBox::createTools(QStackedLayout* bookCtrl)
   suppressWhileActive(faceTool(), moveObjectsTool(), extrudeTool(), drawShapeTool());
   suppressWhileActive(
     controlPointTool(), moveObjectsTool(), extrudeTool(), drawShapeTool());
+  suppressWhileActive(pathTool(), moveObjectsTool(), extrudeTool(), drawShapeTool());
   suppressWhileActive(clipTool(), moveObjectsTool(), extrudeTool(), drawShapeTool());
 
   addTool(moveObjectsTool());
@@ -555,6 +587,7 @@ void MapViewToolBox::createTools(QStackedLayout* bookCtrl)
   addTool(edgeTool());
   addTool(faceTool());
   addTool(controlPointTool());
+  addTool(pathTool());
   addTool(createEntityTool());
   addTool(drawShapeTool());
 
@@ -644,6 +677,10 @@ void MapViewToolBox::updateToolPage()
   else if (controlPointToolActive())
   {
     m_bookCtrl->setCurrentWidget(m_controlPointToolPage);
+  }
+  else if (pathToolActive())
+  {
+    m_bookCtrl->setCurrentWidget(m_emptyToolPage);
   }
   else if (
     shearToolActive() || vertexToolActive() || edgeToolActive() || faceToolActive()

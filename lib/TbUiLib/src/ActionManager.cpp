@@ -1567,6 +1567,20 @@ void ActionManager::createToolsMenu()
     std::filesystem::path{"ControlPointTool.svg"},
   }));
   toolsMenu.addItem(addAction(Action{
+    "Menu/Edit/Tools/Path Editor",
+    "Path Editor",
+    ActionContext::Any,
+    KeySequence{},
+    [](auto& context) { context.mapWindow().toolBox().togglePathTool(); },
+    [](const auto& context) {
+      return context.hasDocument() && context.mapWindow().toolBox().canTogglePathTool();
+    },
+    [](const auto& context) {
+      return context.hasDocument() && context.mapWindow().toolBox().pathToolActive();
+    },
+    std::filesystem::path{"ControlPointTool.svg"},
+  }));
+  toolsMenu.addItem(addAction(Action{
     "Controls/Map view/Deactivate current tool",
     "Deactivate Current Tool",
     ActionContext::Any,
