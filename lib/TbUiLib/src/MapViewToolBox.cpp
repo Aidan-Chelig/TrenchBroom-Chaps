@@ -24,6 +24,7 @@
 
 #include "mdl/EditorContext.h"
 #include "mdl/Map.h"
+#include "mdl/PathEntity.h"
 #include "mdl/Selection.h"
 #include "ui/AssembleBrushTool.h"
 #include "ui/ClipTool.h"
@@ -447,7 +448,10 @@ bool MapViewToolBox::faceToolActive() const
 bool MapViewToolBox::canToggleControlPointTool() const
 {
   const auto& map = m_document.map();
-  return controlPointToolActive() || map.selection().hasOnlyPatches();
+  const auto hasPathEntity = std::ranges::any_of(
+    map.selection().allEntities(),
+    [](const auto* entityNode) { return readPath(entityNode->entity()).is_success(); });
+  return controlPointToolActive() || map.selection().hasOnlyPatches() || hasPathEntity;
 }
 
 void MapViewToolBox::toggleControlPointTool()
