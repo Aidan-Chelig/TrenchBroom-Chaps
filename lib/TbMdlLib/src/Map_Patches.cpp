@@ -132,15 +132,11 @@ bool transformControlPoints(
   const auto hasPathEntity = std::ranges::any_of(
     map.selection().allEntities(),
     [](const auto* entityNode) { return readPath(entityNode->entity()).is_success(); });
-  if (hasPathEntity)
-  {
+  auto transformPathNodes = [&]() {
     const auto positions =
       std::set<vm::vec3d>{controlPointPositions.begin(), controlPointPositions.end()};
-    return applyAndSwap(
-      map,
-      "Move Path Control Points",
+    return applyToNodeContents(
       map.selection().allEntities(),
-      collectContainingGroups(kdl::vec_static_cast<Node*>(map.selection().allEntities())),
       kdl::overload(
         [&](Entity& entity) {
           const auto pathResult = readPath(entity);
@@ -170,22 +166,24 @@ bool transformControlPoints(
         [](Group&) { return true; },
         [](Brush&) { return true; },
         [](BezierPatch&) { return true; }));
-  }
+  };
 
   const auto controlPointPositionSet =
     std::set<vm::vec3d>{controlPointPositions.begin(), controlPointPositions.end()};
 
-  auto newNodes = applyToNodeContents(
-    map.selection().patches,
-    kdl::overload(
-      [](Layer&) { return true; },
-      [](Group&) { return true; },
-      [](Entity&) { return true; },
-      [](Brush&) { return true; },
-      [&](BezierPatch& patch) {
-        patch.transformControlPoints(controlPointPositionSet, transform);
-        return true;
-      }));
+  auto newNodes = hasPathEntity ? transformPathNodes()
+                                : applyToNodeContents(
+                                    map.selection().patches,
+                                    kdl::overload(
+                                      [](Layer&) { return true; },
+                                      [](Group&) { return true; },
+                                      [](Entity&) { return true; },
+                                      [](Brush&) { return true; },
+                                      [&](BezierPatch& patch) {
+                                        patch.transformControlPoints(
+                                          controlPointPositionSet, transform);
+                                        return true;
+                                      }));
 
   if (!newNodes)
   {

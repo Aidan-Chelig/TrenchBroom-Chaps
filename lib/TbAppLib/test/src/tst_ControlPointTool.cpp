@@ -20,12 +20,14 @@
 #include "gl/Camera.h"
 #include "gl/PerspectiveCamera.h"
 #include "mdl/BezierPatch.h"
+#include "mdl/EntityNode.h"
 #include "mdl/Hit.h"
 #include "mdl/Map.h"
 #include "mdl/Map_Nodes.h"
 #include "mdl/Map_Selection.h"
 #include "mdl/NodeHandles.h"
 #include "mdl/PatchNode.h"
+#include "mdl/PathEntity.h"
 #include "mdl/PickResult.h"
 #include "mdl/TestFactory.h"
 #include "ui/ControlPointTool.h"
@@ -189,6 +191,50 @@ TEST_CASE("ControlPointTool")
         CHECK(map.nodeHandles().handleCount<mdl::ControlPointHandle>() == 9u);
       }
     }
+  }
+
+  SECTION("path dragging keeps handles synchronized")
+  {
+    auto entity = mdl::Entity{
+      {{"classname", "path"}, {"origin", "100 200 300"}, {"angles", "0 90 0"}}};
+    auto path = mdl::Path{};
+    path.nodes = {mdl::PathNode{}, mdl::PathNode{{64, 0, 0}}};
+    REQUIRE(mdl::writePath(entity, path));
+    auto* entityNode = new mdl::EntityNode{std::move(entity)};
+    mdl::addNodes(map, {{&mdl::parentForNodes(map), {entityNode}}});
+    mdl::selectNodes(map, {entityNode});
+    auto tool = ControlPointTool{document};
+    REQUIRE(tool.activate());
+    const auto hitAt = [](const vm::vec3d& position) {
+      return mdl::Hit{
+        mdl::ControlPointHandle::HandleHitType,
+        0.0,
+        position,
+        mdl::ControlPointHandle{position}};
+    };
+    REQUIRE(tool.startMove({hitAt({100, 200, 300})}));
+    for (int step = 1; step <= 3; ++step)
+    {
+      REQUIRE(tool.move({0, 8, 0}) == ControlPointTool::MoveResult::Continue);
+      CHECK(
+        mdl::readPath(entityNode->entity()).value().nodes[0].position
+        == vm::vec3d{8.0 * step, 0, 0});
+      CHECK(tool.selected(hitAt({100, 200.0 + 8 * step, 300})));
+    }
+    tool.endMove();
+    map.undoCommand();
+    CHECK(tool.selected(hitAt({100, 200, 300})));
+    map.redoCommand();
+    CHECK(tool.selected(hitAt({100, 224, 300})));
+    REQUIRE(tool.startMove({hitAt({100, 224, 300})}));
+    REQUIRE(tool.move({0, 8, 0}) == ControlPointTool::MoveResult::Continue);
+    tool.endMove();
+    CHECK(
+      mdl::readPath(entityNode->entity()).value().nodes[0].position
+      == vm::vec3d{32, 0, 0});
+    mdl::deselectAll(map);
+    CHECK(map.nodeHandles().handleCount<mdl::ControlPointHandle>() == 0u);
+    tool.deactivate();
   }
 
   SECTION("move")
