@@ -152,6 +152,25 @@ bool transformControlPoints(
           {
             return false;
           }
+          if (path.kind == PathKind::Bezier)
+          {
+            for (size_t i = 0; i < path.segmentCount(); ++i)
+            {
+              const auto controls = path.segmentControls(i);
+              const auto updateHandle = [&](const size_t nodeIndex,
+                                            std::optional<vm::vec3d>& handle,
+                                            const vm::vec3d& worldPosition) {
+                  if (positions.contains(worldPosition))
+                  {
+                    handle = *inverseTransform * (transform * worldPosition);
+                    path.nodes[nodeIndex].handleMode = PathHandleMode::Free;
+                  }
+                };
+              updateHandle(i, path.nodes[i].handleOut, entityTransform * controls[1]);
+              const auto next = (i + 1) % path.nodes.size();
+              updateHandle(next, path.nodes[next].handleIn, entityTransform * controls[2]);
+            }
+          }
           for (auto& node : path.nodes)
           {
             const auto worldPosition = entityTransform * node.position;

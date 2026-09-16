@@ -253,6 +253,15 @@ std::vector<ControlPointHandle> ControlPointHandle::getHandles(const Node& node)
         {
           result.emplace_back(vm::vec3d{transform * pathNode.position});
         }
+        if (path.value().kind == PathKind::Bezier)
+        {
+          for (size_t i = 0; i < path.value().segmentCount(); ++i)
+          {
+            const auto controls = path.value().segmentControls(i);
+            result.emplace_back(vm::vec3d{transform * controls[1]});
+            result.emplace_back(vm::vec3d{transform * controls[2]});
+          }
+        }
       }
     },
     [](const BrushNode&) {},

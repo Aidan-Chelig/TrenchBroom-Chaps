@@ -34,6 +34,7 @@
 #include "ui/MapDocument.h"
 #include "ui/MapDocumentFixture.h"
 
+#include "vm/approx.h"
 #include "vm/ray.h"
 #include "vm/vec.h"
 
@@ -235,6 +236,35 @@ TEST_CASE("ControlPointTool")
     mdl::deselectAll(map);
     CHECK(map.nodeHandles().handleCount<mdl::ControlPointHandle>() == 0u);
     tool.deactivate();
+  }
+
+  SECTION("Bezier handles become editable")
+  {
+    auto entity = mdl::Entity{{{"classname", "path"}, {"origin", "100 200 300"}}};
+    auto path = mdl::Path{};
+    path.kind = mdl::PathKind::Bezier;
+    path.nodes = {mdl::PathNode{}, mdl::PathNode{{64, 0, 0}}};
+    REQUIRE(mdl::writePath(entity, path));
+    auto* entityNode = new mdl::EntityNode{std::move(entity)};
+    mdl::addNodes(map, {{&mdl::parentForNodes(map), {entityNode}}});
+    mdl::selectNodes(map, {entityNode});
+    auto tool = ControlPointTool{document};
+    REQUIRE(tool.activate());
+
+    const auto handlePosition = vm::vec3d{100.0 + 64.0 / 6.0, 200, 300};
+    const auto hit = mdl::Hit{
+      mdl::ControlPointHandle::HandleHitType,
+      0.0,
+      handlePosition,
+      mdl::ControlPointHandle{handlePosition}};
+    REQUIRE(tool.startMove({hit}));
+    REQUIRE(tool.move({0, 8, 0}) == ControlPointTool::MoveResult::Continue);
+    tool.endMove();
+
+    const auto edited = mdl::readPath(entityNode->entity()).value();
+    REQUIRE(edited.nodes[0].handleOut.has_value());
+    CHECK(edited.nodes[0].handleOut == vm::approx{vm::vec3d{64.0 / 6.0, 8, 0}});
+    CHECK(edited.nodes[0].handleMode == mdl::PathHandleMode::Free);
   }
 
   SECTION("move")
