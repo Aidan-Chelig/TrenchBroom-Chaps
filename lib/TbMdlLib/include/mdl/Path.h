@@ -22,6 +22,7 @@
 #include "vm/mat.h"
 #include "vm/vec.h"
 
+#include <array>
 #include <optional>
 #include <vector>
 
@@ -58,6 +59,8 @@ struct Path
   bool closed = false;
 
   size_t segmentCount() const;
+  // Cubic Bezier controls for any segment, including generated Auto handles.
+  std::array<vm::vec3d, 4> segmentControls(size_t segment) const;
   // Clamp t to [0, 1]. Empty paths return the zero vector; a one-node path is
   // constant. tangent returns a unit vector, or zero for a stationary point.
   vm::vec3d sample(double t) const;

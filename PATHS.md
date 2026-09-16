@@ -13,11 +13,23 @@ No particular entity classname is hardcoded into these APIs.
 - Affine transformation of positions and handles, including nonuniform scale.
 - Versioned entity-property serialization that preserves unrelated properties.
 - Tests using the existing `.map` node writer and reader.
+- Viewport curves, control points, start indicators, and direction arrows in 3D
+  and orthographic views. Selecting the entity highlights its path and displays
+  Bezier handles (including generated Auto handles).
 
-This is a library foundation. It does not yet add a viewport path tool, render
-curves, recognize path entities through FGD metadata, or connect path transforms
-to entity editing. Bevy import, followers, and gameplay consumers also remain to
-be implemented in the game repository. EricW compilation has not been tested.
+Visualization recognizes any point entity with valid version 1 path properties,
+regardless of classname. No FGD metadata or additional toggle is required. Paths
+follow the normal point-entity visibility settings. Property edits and undo/redo
+invalidate cached curve geometry. Malformed or unsupported path data is not drawn.
+
+Select the path entity through its normal entity box to show its handles. The
+displayed points and handles are visual guides; dragging them and selecting a
+curve directly are not implemented yet.
+
+It does not yet add a viewport path tool, recognize path entities through FGD
+metadata, or connect path transforms to entity editing. Bevy import, followers,
+and gameplay consumers also remain to be implemented in the game repository.
+EricW compilation has not been tested.
 
 ## Version 1 entity properties
 
@@ -104,6 +116,6 @@ arc-length table for repeated per-frame traversal.
 ## Next editor milestone
 
 Add generic FGD/ENT metadata to identify path-capable entities, then integrate
-path decoding with bounds, transforms, rendering, and picking. Point and handle
+path decoding with bounds, transforms, and picking. Point and handle
 editing should write entity-property changes through existing map commands so
 undo/redo, cloning, deletion, and copy/paste share the normal entity lifecycle.

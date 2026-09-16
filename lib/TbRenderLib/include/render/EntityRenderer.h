@@ -23,6 +23,7 @@
 #include "gl/AttrString.h"
 #include "render/EdgeRenderer.h"
 #include "render/EntityModelRenderer.h"
+#include "render/PathRenderData.h"
 #include "render/Renderable.h"
 #include "render/TriangleRenderer.h"
 
@@ -58,6 +59,7 @@ private:
   TriangleRenderer m_solidBoundsRenderer;
   EntityModelRenderer m_modelRenderer;
   bool m_boundsValid = false;
+  std::vector<std::pair<const mdl::EntityNode*, PathRenderData>> m_paths;
 
   bool m_showOverlays = true;
   Color m_overlayTextColor;
@@ -142,6 +144,7 @@ private:
   void renderTransparentModels(RenderContext& renderContext, RenderBatch& renderBatch);
   void renderClassnames(RenderContext& renderContext, RenderBatch& renderBatch);
   void renderAngles(RenderContext& renderContext, RenderBatch& renderBatch);
+  void renderPaths(RenderContext& renderContext, RenderBatch& renderBatch);
   std::vector<vm::vec3f> arrowHead(float length, float width) const;
 
   void invalidateBounds();

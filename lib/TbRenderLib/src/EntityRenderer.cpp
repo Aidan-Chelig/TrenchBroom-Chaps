@@ -93,6 +93,7 @@ void EntityRenderer::clear()
   m_brushEntityWireframeBoundsRenderer = DirectEdgeRenderer();
   m_solidBoundsRenderer = TriangleRenderer();
   m_modelRenderer.clear();
+  m_paths.clear();
 }
 
 void EntityRenderer::reloadModels()
@@ -212,6 +213,7 @@ void EntityRenderer::renderOpaque(RenderContext& renderContext, RenderBatch& ren
     renderModels(renderContext, renderBatch);
     renderClassnames(renderContext, renderBatch);
     renderAngles(renderContext, renderBatch);
+    renderPaths(renderContext, renderBatch);
   }
 }
 
@@ -221,6 +223,58 @@ void EntityRenderer::renderTransparent(
   if (!m_entities.empty())
   {
     renderTransparentModels(renderContext, renderBatch);
+  }
+}
+
+void EntityRenderer::renderPaths(RenderContext& renderContext, RenderBatch& renderBatch)
+{
+  if (m_paths.empty() || (!m_showHiddenEntities && !renderContext.showPointEntities()))
+  {
+    return;
+  }
+  auto service = RenderService{renderContext, renderBatch};
+  for (const auto& [entityNode, geometry] : m_paths)
+  {
+    if (
+      (!m_showHiddenEntities && !m_editorContext.visible(*entityNode))
+      || geometry.nodes.empty())
+    {
+      continue;
+    }
+    const auto selected = entityNode->transitivelySelected();
+    const auto color = m_overrideBoundsColor ? m_boundsColor : boundsColor(*entityNode);
+    service.setForegroundColor(color);
+    service.setLineWidth(selected ? 2.0f : 1.0f);
+    if (selected)
+    {
+      service.setShowOccludedObjectsTransparent();
+    }
+    else
+    {
+      service.setHideOccludedObjects();
+    }
+    if (geometry.curve.size() >= 2)
+    {
+      service.renderLineStrip(geometry.curve);
+    }
+    if (!geometry.arrows.empty())
+    {
+      service.renderLines(geometry.arrows);
+    }
+    service.renderHandles(geometry.nodes);
+    // The first node identifies the start, including the seam of a closed path.
+    service.renderHandleHighlight(geometry.nodes.front());
+    if (selected)
+    {
+      service.renderString(
+        geometry.closed ? "Closed path" : "Path start", geometry.nodes.front());
+      service.setLineWidth(1.0f);
+      if (!geometry.handleLines.empty())
+      {
+        service.renderLines(geometry.handleLines);
+        service.renderHandles(geometry.handles);
+      }
+    }
   }
 }
 
@@ -451,6 +505,17 @@ auto makeColoredSolidBoundsVertexBuilder(
 
 void EntityRenderer::validateBounds()
 {
+  m_paths.clear();
+  for (const auto* entityNode : m_entities)
+  {
+    if (!entityNode->hasChildren())
+    {
+      if (auto geometry = makePathRenderData(entityNode->entity()))
+      {
+        m_paths.emplace_back(entityNode, std::move(*geometry));
+      }
+    }
+  }
   auto solidVertices = std::vector<gl::VertexTypes::P3NC4::Vertex>{};
   solidVertices.reserve(36 * m_entities.size());
 

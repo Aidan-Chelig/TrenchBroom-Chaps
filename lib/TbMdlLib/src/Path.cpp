@@ -88,6 +88,15 @@ size_t Path::segmentCount() const
   return nodes.size() < 2 ? 0 : nodes.size() - (closed ? 0 : 1);
 }
 
+std::array<vm::vec3d, 4> Path::segmentControls(const size_t segment) const
+{
+  if (segment >= segmentCount())
+  {
+    throw std::out_of_range{"Invalid path segment"};
+  }
+  return controls(*this, segment);
+}
+
 vm::vec3d Path::sample(const double t) const
 {
   parameter(t);

@@ -23,6 +23,7 @@ target_sources(TbRenderLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MapRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ObjectRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PatchRenderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PathRenderData.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PointGuideRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PointHandleRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PrimitiveRenderer.cpp
