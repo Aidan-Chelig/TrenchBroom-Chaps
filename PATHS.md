@@ -22,6 +22,15 @@ regardless of classname. No FGD metadata or additional toggle is required. Paths
 follow the normal point-entity visibility settings. Property edits and undo/redo
 invalidate cached curve geometry. Malformed or unsupported path data is not drawn.
 
+Placing an entity whose definition declares `path_version`, `path_type`,
+`point_count`, and `closed` initializes an empty path with two points, starting at
+the placement origin and extending 64 units along X. This works even when the
+game disables automatic default properties. Zero/empty version and type defaults
+become version 1 and Catmull-Rom. Explicit Linear or Bezier defaults are honored.
+Creation and initialization undo together. Existing entities and authored point
+defaults are not rewritten; an old empty entity must be recreated or populated
+with valid path properties.
+
 Select the path entity through its normal entity box to show its handles. The
 displayed points and handles are visual guides; dragging them and selecting a
 curve directly are not implemented yet.
@@ -55,7 +64,8 @@ EricW compilation has not been tested.
 ```
 
 `path_version`, `path_type`, `closed`, and `point_count` are required. Supported
-types are `linear`, `catmull_rom`, and `bezier`. `closed` must be `0` or `1`.
+types are `linear`, `catmull_rom`, and `bezier`. `closed` may be `0`/`1` or
+`false`/`true`; the latter is useful for boolean FGD serializers.
 Counts range from 0 to 65536; indices must be contiguous and start at zero.
 An empty path is permitted while authoring. Runtime consumers should require at
 least two nodes before starting movement.

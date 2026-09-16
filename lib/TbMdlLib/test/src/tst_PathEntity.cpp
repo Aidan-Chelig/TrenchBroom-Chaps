@@ -164,6 +164,20 @@ TEST_CASE("PathEntity")
     }
   }
 
+  SECTION("boolean closed values are accepted")
+  {
+    REQUIRE(writePath(entity, path));
+    entity.addOrUpdateProperty("closed", "true");
+    auto result = readPath(entity);
+    REQUIRE(static_cast<bool>(result));
+    CHECK(result.value().closed);
+
+    entity.addOrUpdateProperty("closed", "false");
+    result = readPath(entity);
+    REQUIRE(static_cast<bool>(result));
+    CHECK_FALSE(result.value().closed);
+  }
+
   SECTION("failed write leaves the entity untouched")
   {
     const auto previous = entity.properties();

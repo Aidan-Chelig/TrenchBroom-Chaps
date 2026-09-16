@@ -34,6 +34,7 @@
 #include "mdl/Map_Nodes.h"
 #include "mdl/Map_Selection.h"
 #include "mdl/PatchNode.h"
+#include "mdl/PathEntity.h"
 #include "mdl/TestFactory.h"
 #include "mdl/TestUtils.h"
 #include "mdl/Transaction.h"
@@ -105,6 +106,72 @@ TEST_CASE("Map_Entities")
 
   SECTION("createPointEntity")
   {
+    SECTION("new path entities have visible points at the placement origin")
+    {
+      const auto kind =
+        GENERATE(std::string{}, std::string{"bezier"}, std::string{"linear"});
+      map.entityDefinitionManager().setDefinitions({
+        EntityDefinition{
+          "camera_route",
+          Color{},
+          "",
+          {
+            {"path_version", PropertyValueTypes::Integer{0}, "", ""},
+            {"path_type", PropertyValueTypes::String{kind}, "", ""},
+            {"point_count", PropertyValueTypes::Integer{0}, "", ""},
+            {"closed", PropertyValueTypes::Boolean{false}, "", ""},
+          },
+          PointEntityDefinition{vm::bbox3d{4.0}, {}, {}},
+        },
+      });
+      const auto& definition = map.entityDefinitionManager().definitions().front();
+      auto* entityNode = createPointEntity(map, definition, {128, 256, 64});
+      REQUIRE(entityNode != nullptr);
+      const auto decoded = readPath(entityNode->entity());
+      REQUIRE(static_cast<bool>(decoded));
+      REQUIRE(decoded.value().nodes.size() == 2u);
+      CHECK(decoded.value().nodes[0].position == vm::vec3d{128, 256, 64});
+      CHECK(decoded.value().nodes[1].position == vm::vec3d{192, 256, 64});
+      CHECK(entityNode->entity().hasProperty("path_version", "1"));
+      CHECK(entityNode->entity().hasProperty(
+        "path_type", kind.empty() ? "catmull_rom" : kind));
+
+      map.undoCommand();
+      CHECK(map.worldNode().defaultLayer()->children().empty());
+      map.redoCommand();
+      const auto restored = readPath(entityNode->entity());
+      REQUIRE(static_cast<bool>(restored));
+      CHECK(restored.value().nodes[0].position == vm::vec3d{128, 256, 64});
+      CHECK(restored.value().nodes[1].position == vm::vec3d{192, 256, 64});
+    }
+
+    SECTION("path creation preserves authored point defaults and unsupported versions")
+    {
+      const auto version = GENERATE(1, 2);
+      map.entityDefinitionManager().setDefinitions({
+        EntityDefinition{
+          "camera_route",
+          Color{},
+          "",
+          {
+            {"path_version", PropertyValueTypes::Integer{version}, "", ""},
+            {"path_type", PropertyValueTypes::String{"linear"}, "", ""},
+            {"point_count", PropertyValueTypes::Integer{1}, "", ""},
+            {"closed", PropertyValueTypes::Boolean{false}, "", ""},
+            {"point_0", PropertyValueTypes::String{"10 20 30"}, "", ""},
+          },
+          PointEntityDefinition{vm::bbox3d{4.0}, {}, {}},
+        },
+      });
+      const auto& definition = map.entityDefinitionManager().definitions().front();
+      auto* entityNode = createPointEntity(map, definition, {128, 256, 64});
+      REQUIRE(entityNode != nullptr);
+      CHECK(entityNode->entity().hasProperty("path_version", std::to_string(version)));
+      CHECK(entityNode->entity().hasProperty("point_count", "1"));
+      CHECK(entityNode->entity().hasProperty("point_0", "10 20 30"));
+      CHECK_FALSE(entityNode->entity().hasProperty("point_1"));
+    }
+
     SECTION("Point entity is created and selected")
     {
       auto* entityNode =

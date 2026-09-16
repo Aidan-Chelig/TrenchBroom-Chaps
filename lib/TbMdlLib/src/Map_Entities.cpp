@@ -33,6 +33,7 @@
 #include "mdl/Map_Selection.h"
 #include "mdl/ModelUtils.h"
 #include "mdl/NodeQueries.h"
+#include "mdl/PathEntity.h"
 #include "mdl/Transaction.h"
 #include "mdl/WorldNode.h"
 
@@ -123,6 +124,83 @@ EntityNode* createPointEntity(
   {
     transaction.cancel();
     return nullptr;
+  }
+
+  // Path definitions declare the serialized schema. Seed empty new paths after
+  // placement so the world-space points start at the entity's actual origin.
+  if (
+    getPropertyDefinition(definition, "path_version")
+    && getPropertyDefinition(definition, "path_type")
+    && getPropertyDefinition(definition, "point_count")
+    && getPropertyDefinition(definition, "closed"))
+  {
+    const auto initialized = applyAndSwap(
+      map,
+      "Initialize Path",
+      std::vector<EntityNodeBase*>{entityNode},
+      collectContainingGroups(std::vector<Node*>{entityNode}),
+      kdl::overload(
+        [](Layer&) { return true; },
+        [](Group&) { return true; },
+        [&definition](Entity& pathEntity) {
+          for (const auto& propertyDefinition : definition.propertyDefinitions)
+          {
+            const auto& key = propertyDefinition.key;
+            if (
+              (key == "path_version" || key == "path_type" || key == "closed"
+               || key.starts_with("point_"))
+              && !pathEntity.hasProperty(key))
+            {
+              if (const auto value = PropertyDefinition::defaultValue(propertyDefinition))
+              {
+                pathEntity.addOrUpdateProperty(key, *value);
+              }
+            }
+          }
+          const auto* count = pathEntity.property("point_count");
+          const auto* version = pathEntity.property("path_version");
+          if (
+            (count && !count->empty() && *count != "0")
+            || (version && !version->empty() && *version != "0" && *version != "1"))
+          {
+            return true;
+          }
+          // Do not replace authored defaults, even if their count is missing.
+          for (const auto& property : pathEntity.propertiesWithPrefix("point_"))
+          {
+            if (property.key() != "point_count")
+            {
+              return true;
+            }
+          }
+          auto path = Path{};
+          if (const auto* type = pathEntity.property("path_type"); type && !type->empty())
+          {
+            if (*type == "linear")
+            {
+              path.kind = PathKind::Linear;
+            }
+            else if (*type == "bezier")
+            {
+              path.kind = PathKind::Bezier;
+            }
+            else if (*type != "catmull_rom")
+            {
+              return true;
+            }
+          }
+          path.closed = pathEntity.hasProperty("closed", "1");
+          const auto origin = pathEntity.origin();
+          path.nodes = {PathNode{origin}, PathNode{origin + vm::vec3d{64, 0, 0}}};
+          return static_cast<bool>(writePath(pathEntity, path));
+        },
+        [](Brush&) { return true; },
+        [](BezierPatch&) { return true; }));
+    if (!initialized)
+    {
+      transaction.cancel();
+      return nullptr;
+    }
   }
 
   if (!transaction.commit())

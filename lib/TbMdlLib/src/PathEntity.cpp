@@ -128,11 +128,11 @@ Result<Path> readPath(const Entity& entity)
   {
     return Error{"Unknown path_type"};
   }
-  if (entity.hasProperty("closed", "1"))
+  if (entity.hasProperty("closed", "1") || entity.hasProperty("closed", "true"))
   {
     result.closed = true;
   }
-  else if (!entity.hasProperty("closed", "0"))
+  else if (!entity.hasProperty("closed", "0") && !entity.hasProperty("closed", "false"))
   {
     return Error{"Expected closed to be 0 or 1"};
   }
