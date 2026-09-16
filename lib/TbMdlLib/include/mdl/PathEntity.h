@@ -26,7 +26,7 @@ namespace tb::mdl
 {
 class Entity;
 
-// Version 1 uses world-space positions and handles. No classname is assumed.
+// Version 1 uses entity-local positions and handles. No classname is assumed.
 // Reading requires path_version, path_type, closed, point_count, and contiguous
 // point_N positions. Writing preserves unrelated properties and is atomic on error.
 Result<Path> readPath(const Entity& entity);

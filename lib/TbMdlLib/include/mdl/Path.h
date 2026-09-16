@@ -48,6 +48,7 @@ struct PathNode
   std::optional<vm::vec3d> handleIn = std::nullopt;
   std::optional<vm::vec3d> handleOut = std::nullopt;
   PathHandleMode handleMode = PathHandleMode::Auto;
+  double roll = 0.0; // Degrees around the path tangent.
 };
 
 // Positions and handles are absolute coordinates in the same space. Auto handles
@@ -65,6 +66,7 @@ struct Path
   // constant. tangent returns a unit vector, or zero for a stationary point.
   vm::vec3d sample(double t) const;
   vm::vec3d tangent(double t) const;
+  double sampleRoll(double t) const;
 
   // Piecewise-linear approximations with samplesPerSegment subdivisions per
   // segment (minimum 1). Distances are clamped, even for closed paths.

@@ -116,6 +116,7 @@ target_sources(TbMdlLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Map_Nodes.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Map_NodeVisibility.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Map_Patches.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Map_Paths.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Map_Picking.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Map_Selection.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Map_World.cpp

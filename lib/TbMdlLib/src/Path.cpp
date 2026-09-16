@@ -127,6 +127,23 @@ vm::vec3d Path::tangent(const double t) const
   return magnitude > 0.0 ? derivative / magnitude : vm::vec3d{};
 }
 
+double Path::sampleRoll(const double t) const
+{
+  parameter(t);
+  if (nodes.empty())
+  {
+    return 0.0;
+  }
+  if (segmentCount() == 0)
+  {
+    return nodes.front().roll;
+  }
+  const auto [segment, u] = segmentParameter(*this, t);
+  const auto start = nodes[segment].roll;
+  const auto end = nodes[(segment + 1) % nodes.size()].roll;
+  return start + u * std::remainder(end - start, 360.0);
+}
+
 double Path::length(const size_t samplesPerSegment) const
 {
   const auto count = sampleCount(*this, samplesPerSegment);

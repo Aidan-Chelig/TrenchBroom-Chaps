@@ -38,6 +38,7 @@
 #include "ui/MapDocument.h"
 #include "ui/MoveObjectsTool.h"
 #include "ui/PathTool.h"
+#include "ui/PathToolPage.h"
 #include "ui/RotateTool.h"
 #include "ui/RotateToolPage.h"
 #include "ui/ScaleTool.h"
@@ -608,6 +609,9 @@ void MapViewToolBox::createTools(QStackedLayout* bookCtrl)
   m_controlPointToolPage = new ControlPointToolPage{m_document, parent};
   bookCtrl->addWidget(m_controlPointToolPage);
 
+  m_pathToolPage = new PathToolPage{m_document, parent};
+  bookCtrl->addWidget(m_pathToolPage);
+
   auto* drawShapeToolPage =
     new DrawShapeToolPage{drawShapeTool().extensionManager(), parent};
   m_notifierConnection += drawShapeToolPage->applyParametersNotifier.connect(
@@ -680,7 +684,7 @@ void MapViewToolBox::updateToolPage()
   }
   else if (pathToolActive())
   {
-    m_bookCtrl->setCurrentWidget(m_emptyToolPage);
+    m_bookCtrl->setCurrentWidget(m_pathToolPage);
   }
   else if (
     shearToolActive() || vertexToolActive() || edgeToolActive() || faceToolActive()

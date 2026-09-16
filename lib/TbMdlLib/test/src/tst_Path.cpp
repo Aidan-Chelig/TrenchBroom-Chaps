@@ -43,6 +43,19 @@ PathNode node(const vm::vec3d& position)
 
 TEST_CASE("Path")
 {
+  SECTION("roll interpolates across the shortest angle")
+  {
+    auto path = Path{};
+    path.nodes = {PathNode{{0, 0, 0}}, PathNode{{64, 0, 0}}};
+    CHECK(path.sampleRoll(0.5) == 0.0);
+    path.nodes[0].roll = 170.0;
+    path.nodes[1].roll = -170.0;
+    CHECK(path.sampleRoll(0.5) == 180.0);
+    CHECK(path.sampleRoll(1.0) == 190.0);
+    path.closed = true;
+    CHECK(path.sampleRoll(0.75) == -180.0);
+    CHECK(path.sampleRoll(1.0) == -190.0);
+  }
   auto path =
     Path{PathKind::Linear, {node({0, 0, 0}), node({10, 0, 0}), node({10, 30, 0})}, false};
 

@@ -33,6 +33,7 @@ struct PathRenderData
   std::vector<vm::vec3f> handles;
   std::vector<vm::vec3f> handleLines;
   std::vector<vm::vec3f> arrows;
+  std::vector<vm::vec3f> rollMarkers;
   bool closed = false;
 };
 

@@ -31,13 +31,12 @@ Creation and initialization undo together. Existing entities and authored point
 defaults are not rewritten; an old empty entity must be recreated or populated
 with valid path properties.
 
-Select the path entity through its normal entity box to show its handles. The
-displayed points and handles are visual guides; dragging them and selecting a
-curve directly are not implemented yet.
-
-It does not yet add a viewport path tool, recognize path entities through FGD
-metadata, or connect path transforms to entity editing. Bevy import, followers,
-and gameplay consumers also remain to be implemented in the game repository.
+Select the path entity through its normal entity box, then choose Edit → Tools →
+Path Editor to drag points and Bezier handles. The Path Editor page lets you
+choose a point index and set its roll in degrees. A nonzero roll draws a short
+orientation spoke at that point. Curve picking and FGD path metadata are not
+implemented yet. Bevy import, followers, and gameplay consumers also remain to
+be implemented in the game repository.
 EricW compilation has not been tested.
 
 ## Version 1 entity properties
@@ -75,6 +74,12 @@ The editor displays them after applying the entity's translation, rotation, and
 scale. The game runtime should apply the same entity transform when importing
 the path. Moving the entity therefore moves the whole path without rewriting
 every stored point.
+
+Optional `point_N_roll` values are angles in degrees around the path tangent, using
+the map's Z-up orientation as the zero-roll reference. Missing roll is zero, and
+zero values are omitted when a path is written. Roll interpolates
+between neighboring nodes along the shortest angular arc, including the closing
+segment of a closed path. The Path Editor's point and roll controls edit this value.
 
 Each position has exactly three finite numbers. Missing positions, duplicate
 path properties, out-of-range indices, malformed handles, unknown modes/types,

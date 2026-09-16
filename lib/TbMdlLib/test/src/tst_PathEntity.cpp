@@ -82,6 +82,20 @@ TEST_CASE("PathEntity")
     CHECK_FALSE(entity.hasProperty("point_0_out"));
   }
 
+  SECTION("roll is optional and zero is omitted")
+  {
+    REQUIRE(writePath(entity, path));
+    CHECK_FALSE(entity.hasProperty("point_0_roll"));
+    path.nodes[0].roll = 45.5;
+    REQUIRE(writePath(entity, path));
+    CHECK(entity.hasProperty("point_0_roll", "45.5"));
+    REQUIRE(static_cast<bool>(readPath(entity)));
+    CHECK(readPath(entity).value().nodes[0].roll == 45.5);
+    path.nodes[0].roll = 0.0;
+    REQUIRE(writePath(entity, path));
+    CHECK_FALSE(entity.hasProperty("point_0_roll"));
+  }
+
   SECTION("invalid input is rejected")
   {
     REQUIRE(writePath(entity, path));
@@ -136,6 +150,10 @@ TEST_CASE("PathEntity")
     SECTION("invalid closed")
     {
       entity.addOrUpdateProperty("closed", "yes");
+    }
+    SECTION("invalid roll")
+    {
+      entity.addOrUpdateProperty("point_0_roll", "NaN");
     }
     CHECK(readPath(entity).is_error());
   }

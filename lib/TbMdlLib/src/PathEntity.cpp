@@ -63,7 +63,8 @@ bool isPointProperty(const std::string_view key)
   }
   const auto suffix =
     end == std::string_view::npos ? std::string_view{} : tail.substr(end);
-  return suffix.empty() || suffix == "_in" || suffix == "_out" || suffix == "_mode";
+  return suffix.empty() || suffix == "_in" || suffix == "_out" || suffix == "_mode"
+         || suffix == "_roll";
 }
 
 bool isPathProperty(const std::string_view key)
@@ -172,6 +173,20 @@ Result<Path> readPath(const Entity& entity)
     }
     auto node = PathNode{};
     node.position = *position;
+    if (const auto* roll = entity.property(key + "_roll"))
+    {
+      auto input = std::istringstream{*roll};
+      input.imbue(std::locale::classic());
+      if (!(input >> node.roll) || !std::isfinite(node.roll))
+      {
+        return Error{fmt::format("Invalid '{}_roll'", key)};
+      }
+      input >> std::ws;
+      if (!input.eof())
+      {
+        return Error{fmt::format("Invalid '{}_roll'", key)};
+      }
+    }
     for (const auto& [suffix, handle] :
          {std::pair{"_in", &node.handleIn}, std::pair{"_out", &node.handleOut}})
     {
@@ -246,12 +261,16 @@ Result<void> writePath(Entity& entity, const Path& path)
     const auto& node = path.nodes[i];
     if (
       !finite(node.position) || (node.handleIn && !finite(*node.handleIn))
-      || (node.handleOut && !finite(*node.handleOut)))
+      || (node.handleOut && !finite(*node.handleOut)) || !std::isfinite(node.roll))
     {
       return Error{"Path positions and handles must be finite"};
     }
     const auto key = fmt::format("point_{}", i);
     properties.emplace_back(key, positionString(node.position));
+    if (node.roll != 0.0)
+    {
+      properties.emplace_back(key + "_roll", fmt::format("{:.17g}", node.roll));
+    }
     if (node.handleIn)
     {
       properties.emplace_back(key + "_in", positionString(*node.handleIn));

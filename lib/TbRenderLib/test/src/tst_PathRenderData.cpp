@@ -67,6 +67,22 @@ TEST_CASE("PathRenderData")
     CHECK(changed->curve.back() == vm::vec3f{999, 1255, 999});
   }
 
+  SECTION("nonzero roll shows an orientation marker")
+  {
+    path.nodes[0].roll = 90.0;
+    REQUIRE(mdl::writePath(entity, path));
+    const auto geometry = makePathRenderData(entity);
+    REQUIRE(geometry.has_value());
+    REQUIRE(geometry->rollMarkers.size() == 2u);
+    CHECK(geometry->rollMarkers.front() == geometry->nodes.front());
+    CHECK(
+      vm::distance(geometry->rollMarkers[0], geometry->rollMarkers[1])
+      == vm::approx{16.0f});
+    path.nodes[0].roll = 0.0;
+    REQUIRE(mdl::writePath(entity, path));
+    CHECK(makePathRenderData(entity)->rollMarkers.empty());
+  }
+
   SECTION("closed linear paths include the closing edge")
   {
     path.kind = mdl::PathKind::Linear;

@@ -45,6 +45,27 @@ std::optional<PathRenderData> makePathRenderData(const mdl::Entity& entity)
   {
     result.nodes.emplace_back(node.position);
   }
+  for (size_t i = 0; i < path.nodes.size(); ++i)
+  {
+    if (path.nodes[i].roll == 0.0 || path.segmentCount() == 0)
+    {
+      continue;
+    }
+    const auto t = double(i) / double(path.segmentCount());
+    const auto tangent = path.tangent(t);
+    if (vm::squared_length(tangent) < 0.5)
+    {
+      continue;
+    }
+    const auto reference =
+      std::abs(tangent.z()) < 0.9 ? vm::vec3d{0, 0, 1} : vm::vec3d{0, 1, 0};
+    const auto side = vm::normalize(vm::cross(tangent, reference));
+    const auto up = vm::cross(side, tangent);
+    const auto radians = path.nodes[i].roll * (std::acos(-1.0) / 180.0);
+    const auto spoke = std::cos(radians) * up + std::sin(radians) * side;
+    result.rollMarkers.emplace_back(path.nodes[i].position);
+    result.rollMarkers.emplace_back(path.nodes[i].position + 16.0 * spoke);
+  }
   const auto segments = path.segmentCount();
   // Limit subdivision work on very large imported paths while retaining every node.
   const auto subdivisions =
@@ -99,7 +120,8 @@ std::optional<PathRenderData> makePathRenderData(const mdl::Entity& entity)
   };
   if (
     !finite(result.curve) || !finite(result.nodes) || !finite(result.handles)
-    || !finite(result.handleLines) || !finite(result.arrows))
+    || !finite(result.handleLines) || !finite(result.arrows)
+    || !finite(result.rollMarkers))
   {
     return std::nullopt;
   }

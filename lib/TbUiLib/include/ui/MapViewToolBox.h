@@ -82,6 +82,7 @@ private:
   QWidget* m_sweepToolPage = nullptr;
   QWidget* m_scaleToolPage = nullptr;
   QWidget* m_controlPointToolPage = nullptr;
+  QWidget* m_pathToolPage = nullptr;
   QWidget* m_drawShapeToolPage = nullptr;
 
   NotifierConnection m_notifierConnection;

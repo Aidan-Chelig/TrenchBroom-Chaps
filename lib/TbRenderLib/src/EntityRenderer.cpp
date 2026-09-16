@@ -261,6 +261,10 @@ void EntityRenderer::renderPaths(RenderContext& renderContext, RenderBatch& rend
     {
       service.renderLines(geometry.arrows);
     }
+    if (!geometry.rollMarkers.empty())
+    {
+      service.renderLines(geometry.rollMarkers);
+    }
     service.renderHandles(geometry.nodes);
     // The first node identifies the start, including the seam of a closed path.
     service.renderHandleHighlight(geometry.nodes.front());
