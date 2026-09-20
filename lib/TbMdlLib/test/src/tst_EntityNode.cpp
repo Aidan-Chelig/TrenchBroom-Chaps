@@ -150,6 +150,36 @@ TEST_CASE("EntityNode")
     }
   }
 
+  SECTION("image projector bounds")
+  {
+    auto node = EntityNode{Entity{
+      {{"classname", "image_projector"},
+       {"origin", "10 20 30"},
+       {"angles", "0 90 0"},
+       {"width", "20"},
+       {"height", "40"},
+       {"depth", "60"},
+       {"material", "projectors/test"}}}};
+
+    CHECK(vm::approx{vm::bbox3d{{-10, 10, 0}, {30, 30, 60}}} == node.logicalBounds());
+    CHECK(node.physicalBounds() == node.logicalBounds());
+
+    const auto vertices = node.boundsEdgeVertices();
+    CHECK(vertices[0] == vm::approx{vm::vec3d{-10, 30, 60}});
+
+    auto pickResult = PickResult{};
+    node.pick(EditorContext{}, vm::ray3d{{100, 20, 30}, {-1, 0, 0}}, pickResult);
+    REQUIRE(pickResult.size() == 1u);
+    CHECK(pickResult.all().front().hitPoint() == vm::approx{vm::vec3d{30, 20, 30}});
+  }
+
+  SECTION("image projector dimensions default for missing or invalid values")
+  {
+    auto node = EntityNode{
+      Entity{{{"classname", "image_projector"}, {"width", "invalid"}, {"depth", "-1"}}}};
+    CHECK(node.logicalBounds() == vm::bbox3d{{-32, -32, -32}, {32, 32, 32}});
+  }
+
   SECTION("canAddChild")
   {
     auto worldNode = WorldNode{{}, {}, mapFormat};

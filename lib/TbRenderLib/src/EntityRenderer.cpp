@@ -27,6 +27,7 @@
 #include "mdl/EntityDefinition.h"
 #include "mdl/EntityModelManager.h"
 #include "mdl/EntityNode.h"
+#include "mdl/ImageProjector.h"
 #include "render/RenderBatch.h"
 #include "render/RenderContext.h"
 #include "render/RenderService.h"
@@ -38,6 +39,7 @@
 #include "vm/mat_ext.h"
 #include "vm/vec.h"
 
+#include <array>
 #include <ranges>
 #include <vector>
 
@@ -544,9 +546,31 @@ void EntityRenderer::validateBounds()
             pointEntityWireframeVertices.emplace_back(vm::vec3f{vertex});
           }
 
+          if (const auto projector = mdl::imageProjector(entityNode->entity()))
+          {
+            const auto depth = projector->localBounds.size().z();
+            const auto tip = vm::vec3d{0, 0, projector->localBounds.min.z()};
+            const auto arrow = std::array{
+              vm::vec3d{0, 0, 0},
+              tip,
+              tip,
+              vm::vec3d{depth * 0.12, 0, -depth * 0.3},
+              tip,
+              vm::vec3d{-depth * 0.12, 0, -depth * 0.3},
+              tip,
+              vm::vec3d{0, depth * 0.12, -depth * 0.3},
+              tip,
+              vm::vec3d{0, -depth * 0.12, -depth * 0.3}};
+            for (const auto& vertex : arrow)
+            {
+              pointEntityWireframeVertices.emplace_back(
+                vm::vec3f{projector->transformation * vertex});
+            }
+          }
+
           const auto hasModel =
             entityNode->entity().model() && entityNode->entity().model()->data();
-          if (!hasModel)
+          if (!hasModel && !mdl::imageProjector(entityNode->entity()))
           {
             entityNode->logicalBounds().for_each_face(
               makeColoredSolidBoundsVertexBuilder(solidVertices, m_boundsColor));
@@ -589,9 +613,32 @@ void EntityRenderer::validateBounds()
               vm::vec3f{vertex}, boundsColor(*entityNode).to<RgbaF>().toVec());
           }
 
+          if (const auto projector = mdl::imageProjector(entityNode->entity()))
+          {
+            const auto depth = projector->localBounds.size().z();
+            const auto tip = vm::vec3d{0, 0, projector->localBounds.min.z()};
+            const auto arrow = std::array{
+              vm::vec3d{0, 0, 0},
+              tip,
+              tip,
+              vm::vec3d{depth * 0.12, 0, -depth * 0.3},
+              tip,
+              vm::vec3d{-depth * 0.12, 0, -depth * 0.3},
+              tip,
+              vm::vec3d{0, depth * 0.12, -depth * 0.3},
+              tip,
+              vm::vec3d{0, -depth * 0.12, -depth * 0.3}};
+            const auto color = boundsColor(*entityNode).to<RgbaF>().toVec();
+            for (const auto& vertex : arrow)
+            {
+              pointEntityWireframeVertices.emplace_back(
+                vm::vec3f{projector->transformation * vertex}, color);
+            }
+          }
+
           const auto hasModel =
             entityNode->entity().model() && entityNode->entity().model()->data();
-          if (!hasModel)
+          if (!hasModel && !mdl::imageProjector(entityNode->entity()))
           {
             entityNode->logicalBounds().for_each_face(makeColoredSolidBoundsVertexBuilder(
               solidVertices, boundsColor(*entityNode)));

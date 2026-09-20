@@ -24,6 +24,7 @@
 #include "mdl/EntityDefinition.h"
 #include "mdl/EntityModel.h"
 #include "mdl/EntityPropertiesVariableStore.h"
+#include "mdl/ImageProjector.h"
 #include "mdl/ModelUtils.h"
 #include "mdl/PatchNode.h"
 #include "mdl/PickResult.h"
@@ -63,7 +64,14 @@ std::array<vm::vec3d, 24> EntityNode::boundsEdgeVertices() const
 {
   auto vertices = std::array<vm::vec3d, 24>{};
   auto index = size_t{0};
-  if (usesModelBounds())
+  if (const auto projector = imageProjector(m_entity))
+  {
+    projector->localBounds.for_each_edge([&](const auto& start, const auto& end) {
+      vertices[index++] = projector->transformation * start;
+      vertices[index++] = projector->transformation * end;
+    });
+  }
+  else if (usesModelBounds())
   {
     const auto& transform =
       m_entity.modelTransformation(entityPropertyConfig().defaultModelScaleExpression);
@@ -193,7 +201,16 @@ void EntityNode::doPick(
     auto boundsRay = ray;
     auto boundsTransform = vm::mat4x4d::identity();
     auto myBounds = logicalBounds();
-    if (usesModelBounds())
+    if (const auto projector = imageProjector(m_entity))
+    {
+      boundsTransform = projector->transformation;
+      if (const auto inverse = vm::invert(boundsTransform))
+      {
+        boundsRay = ray.transform(*inverse);
+        myBounds = projector->localBounds;
+      }
+    }
+    else if (usesModelBounds())
     {
       boundsTransform =
         m_entity.modelTransformation(entityPropertyConfig().defaultModelScaleExpression);
@@ -354,9 +371,17 @@ void EntityNode::validateBounds() const
     const auto definitionBounds =
       pointEntityDefinition ? pointEntityDefinition->bounds : DefaultBounds;
 
-    m_cachedBounds->logicalBounds = usesModelBounds()
-                                      ? m_cachedBounds->modelBounds
-                                      : definitionBounds.translate(m_entity.origin());
+    if (const auto projector = imageProjector(m_entity))
+    {
+      m_cachedBounds->logicalBounds =
+        projector->localBounds.transform(projector->transformation);
+    }
+    else
+    {
+      m_cachedBounds->logicalBounds = usesModelBounds()
+                                        ? m_cachedBounds->modelBounds
+                                        : definitionBounds.translate(m_entity.origin());
+    }
     if (hasModel)
     {
       m_cachedBounds->physicalBounds =

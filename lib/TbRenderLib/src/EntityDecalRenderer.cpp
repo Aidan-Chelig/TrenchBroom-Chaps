@@ -27,6 +27,7 @@
 #include "mdl/DecalDefinition.h"
 #include "mdl/EditorContext.h"
 #include "mdl/EntityNode.h"
+#include "mdl/ImageProjector.h"
 #include "mdl/Map.h"
 #include "mdl/ModelUtils.h"
 #include "mdl/UvCoordSystem.h"
@@ -52,12 +53,62 @@ namespace
 std::optional<mdl::DecalSpecification> getDecalSpecification(
   const mdl::EntityNode& entityNode)
 {
+  if (const auto projector = mdl::imageProjector(entityNode.entity());
+      projector && !projector->materialName.empty())
+  {
+    return mdl::DecalSpecification{projector->materialName};
+  }
+
   return entityNode.entity().decalSpecification() | kdl::transform([](auto decalSpec) {
            return !decalSpec.materialName.empty()
                     ? std::make_optional(std::move(decalSpec))
                     : std::nullopt;
          })
          | kdl::value_or(std::nullopt);
+}
+
+std::vector<vm::vec3d> clipProjectorPolygon(
+  std::vector<vm::vec3d> vertices, const vm::bbox3d& bounds)
+{
+  const auto clip = [](
+                      std::vector<vm::vec3d> input,
+                      const size_t axis,
+                      const double limit,
+                      const bool keepLess) {
+    auto output = std::vector<vm::vec3d>{};
+    if (input.empty())
+    {
+      return output;
+    }
+    const auto inside = [&](const vm::vec3d& point) {
+      return keepLess ? point[axis] <= limit : point[axis] >= limit;
+    };
+    auto previous = input.back();
+    auto previousInside = inside(previous);
+    for (const auto& current : input)
+    {
+      const auto currentInside = inside(current);
+      if (currentInside != previousInside)
+      {
+        const auto fraction = (limit - previous[axis]) / (current[axis] - previous[axis]);
+        output.push_back(previous + fraction * (current - previous));
+      }
+      if (currentInside)
+      {
+        output.push_back(current);
+      }
+      previous = current;
+      previousInside = currentInside;
+    }
+    return output;
+  };
+
+  for (size_t axis = 0; axis < 3 && !vertices.empty(); ++axis)
+  {
+    vertices = clip(std::move(vertices), axis, bounds.min[axis], false);
+    vertices = clip(std::move(vertices), axis, bounds.max[axis], true);
+  }
+  return vertices;
 }
 
 using Vertex = gl::VertexTypes::P3NT2::Vertex;
@@ -148,6 +199,46 @@ std::vector<Vertex> createDecalBrushFace(
          | kdl::ranges::to<std::vector>();
 }
 
+std::vector<Vertex> createProjectorBrushFace(
+  const mdl::EntityNode& entityNode,
+  const mdl::BrushFace& face,
+  const mdl::ImageProjector& projector)
+{
+  const auto inverse = vm::invert(projector.transformation);
+  if (!inverse)
+  {
+    return {};
+  }
+
+  const auto projectionDirection = entityNode.entity().rotation() * vm::vec3d{0, 0, -1};
+  if (vm::dot(face.boundary().normal, projectionDirection) >= 0.0)
+  {
+    return {};
+  }
+
+  auto localVertices =
+    face.geometry()->vertexPositions()
+    | std::views::transform([&](const auto& vertex) { return *inverse * vertex; })
+    | kdl::ranges::to<std::vector>();
+  localVertices = clipProjectorPolygon(std::move(localVertices), projector.localBounds);
+  if (localVertices.size() < 3u)
+  {
+    return {};
+  }
+
+  const auto size = projector.localBounds.size();
+  const auto normal = vm::vec3f{face.boundary().normal};
+  const auto offset = face.boundary().normal * 0.1;
+  return localVertices | std::views::transform([&](const auto& localVertex) {
+           const auto worldVertex = projector.transformation * localVertex + offset;
+           const auto uv = vm::vec2f{
+             float((localVertex.x() - projector.localBounds.min.x()) / size.x()),
+             float(1.0 - (localVertex.y() - projector.localBounds.min.y()) / size.y())};
+           return Vertex{vm::vec3f{worldVertex}, normal, uv};
+         })
+         | kdl::ranges::to<std::vector>();
+}
+
 } // namespace
 
 EntityDecalRenderer::EntityDecalRenderer(mdl::Map& map)
@@ -183,7 +274,11 @@ void EntityDecalRenderer::clear()
   m_entities.clear();
   m_vertexArray = std::make_shared<BrushVertexArray>();
   m_faces = std::make_shared<MaterialToBrushIndicesMap>();
+  m_projectorFaces = std::make_shared<MaterialToBrushIndicesMap>();
   m_faceRenderer = FaceRenderer{m_vertexArray, m_faces, m_faceColor};
+  m_projectorFaceRenderer = FaceRenderer{m_vertexArray, m_projectorFaces, m_faceColor};
+  m_projectorFaceRenderer.setAlpha(0.55f);
+  m_projectorFaceRenderer.setDisableDepthWrite(true);
 }
 
 void EntityDecalRenderer::updateNode(mdl::Node& node)
@@ -315,13 +410,14 @@ void EntityDecalRenderer::invalidateDecalData(EntityDecalData& data) const
   // update the VBO
   m_vertexArray->deleteVerticesWithKey(data.vertexHolderKey);
 
-  const auto faceIndexHolder = m_faces->at(data.material);
+  auto& faces = data.projector ? *m_projectorFaces : *m_faces;
+  const auto faceIndexHolder = faces.at(data.material);
   faceIndexHolder->zeroElementsWithKey(data.faceIndicesKey);
 
   if (!faceIndexHolder->hasValidIndices())
   {
     // there are no indices left to render for this material
-    m_faces->erase(data.material);
+    faces.erase(data.material);
   }
 
   data.vertexHolderKey = nullptr;
@@ -339,6 +435,8 @@ void EntityDecalRenderer::validateDecalData(
 
   const auto spec = getDecalSpecification(entityNode);
   contract_assert(spec != std::nullopt);
+  const auto projector = mdl::imageProjector(entityNode.entity());
+  data.projector = projector.has_value();
 
   const auto& editorContext = m_map.editorContext();
   const auto& worldNode = m_map.worldNode();
@@ -390,7 +488,8 @@ void EntityDecalRenderer::validateDecalData(
       {
         contract_assert(data.material);
         const auto decalPolygon =
-          createDecalBrushFace(entityNode, *brushNode, face, *data.material);
+          projector ? createProjectorBrushFace(entityNode, face, *projector)
+                    : createDecalBrushFace(entityNode, *brushNode, face, *data.material);
         if (!decalPolygon.empty())
         {
           // add the geometry to be uploaded into the VBO
@@ -420,7 +519,7 @@ void EntityDecalRenderer::validateDecalData(
 
     const auto brushVerticesStartIndex = GLuint(vertBlock->pos);
 
-    auto& faceVboMap = *m_faces;
+    auto& faceVboMap = data.projector ? *m_projectorFaces : *m_faces;
     auto& holderPtr = faceVboMap[data.material];
     if (!holderPtr)
     {
@@ -449,6 +548,7 @@ void EntityDecalRenderer::render(RenderContext&, RenderBatch& renderBatch)
   }
 
   m_faceRenderer.render(renderBatch);
+  m_projectorFaceRenderer.render(renderBatch);
 }
 
 } // namespace tb::render

@@ -59,6 +59,7 @@ private:
     /* will only be true if the brushes array has been calculated since the last change
      * and the decal geometry is stored in the VBO */
     bool validated = false;
+    bool projector = false;
 
     gl::Material* material = nullptr;
 
@@ -77,8 +78,10 @@ private:
     std::unordered_map<const gl::Material*, std::shared_ptr<BrushIndexArray>>;
 
   std::shared_ptr<MaterialToBrushIndicesMap> m_faces;
+  std::shared_ptr<MaterialToBrushIndicesMap> m_projectorFaces;
   std::shared_ptr<BrushVertexArray> m_vertexArray;
   FaceRenderer m_faceRenderer;
+  FaceRenderer m_projectorFaceRenderer;
   Color m_faceColor;
 
 public:
