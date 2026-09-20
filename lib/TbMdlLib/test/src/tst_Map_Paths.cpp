@@ -29,5 +29,19 @@ TEST_CASE("Map_Paths")
   REQUIRE(setPathNodeRoll(map, *node, 0, 0.0));
   CHECK_FALSE(node->entity().hasProperty("point_0_roll"));
   CHECK_FALSE(setPathNodeRoll(map, *node, 2, 20.0));
+
+  REQUIRE(setPathNodeCount(map, *node, 4));
+  auto resized = readPath(node->entity()).value();
+  REQUIRE(resized.nodes.size() == 4u);
+  CHECK(resized.nodes[2].position == vm::vec3d{128, 0, 0});
+  CHECK(resized.nodes[3].position == vm::vec3d{192, 0, 0});
+  map.undoCommand();
+  CHECK(readPath(node->entity()).value().nodes.size() == 2u);
+  map.redoCommand();
+  CHECK(readPath(node->entity()).value().nodes.size() == 4u);
+  REQUIRE(setPathNodeCount(map, *node, 3));
+  CHECK(readPath(node->entity()).value().nodes.size() == 3u);
+  CHECK_FALSE(node->entity().hasProperty("point_3"));
+  CHECK_FALSE(setPathNodeCount(map, *node, 65537u));
 }
 } // namespace tb::mdl

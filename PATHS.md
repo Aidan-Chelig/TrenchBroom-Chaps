@@ -34,7 +34,8 @@ with valid path properties.
 Select the path entity through its normal entity box, then choose Edit → Tools →
 Path Editor to drag points and Bezier handles. The Path Editor page lets you
 choose a point index and set its roll in degrees. A nonzero roll draws a short
-orientation spoke at that point. Curve picking and FGD path metadata are not
+orientation spoke at that point. The Points control adds points by extending the
+last segment, or removes points from the end. Curve picking and FGD path metadata are not
 implemented yet. Bevy import, followers, and gameplay consumers also remain to
 be implemented in the game repository.
 EricW compilation has not been tested.

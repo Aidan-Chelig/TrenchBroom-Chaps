@@ -15,6 +15,7 @@ class PathToolPage : public QWidget
 {
 private:
   MapDocument& m_document;
+  QSpinBox* m_count = nullptr;
   QSpinBox* m_point = nullptr;
   QDoubleSpinBox* m_roll = nullptr;
   NotifierConnection m_connections;
@@ -26,5 +27,6 @@ public:
 
 private:
   void setRoll(double degrees);
+  void setPointCount(int count);
 };
 } // namespace tb::ui
