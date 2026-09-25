@@ -253,8 +253,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD")
 endif()
 
 if(WIN32)
-    # This fork is branded as TrenchBroom CHAPS
-    set_target_properties(TrenchBroom PROPERTIES OUTPUT_NAME "TrenchBroom CHAPS")
+    # This fork is branded as CautionTrench
+    set_target_properties(TrenchBroom PROPERTIES OUTPUT_NAME "CautionTrench")
 endif()
 
 function(tb_add_post_build_copy_directory target source destination)

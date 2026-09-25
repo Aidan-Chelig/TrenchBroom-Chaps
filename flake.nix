@@ -18,7 +18,7 @@
             sha256 = hash;
           };
           trenchbroom = pkgs.stdenv.mkDerivation {
-            pname = "trenchbroom-chaps";
+            pname = "caution-trench";
             version = "0-unstable";
             src = pkgs.lib.cleanSourceWith {
               src = self;
