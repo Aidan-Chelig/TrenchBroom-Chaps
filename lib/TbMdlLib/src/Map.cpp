@@ -700,6 +700,11 @@ const EntityModelManager& Map::entityModelManager() const
   return *m_entityModelManager;
 }
 
+const GameFileSystem& Map::gameFileSystem() const
+{
+  return *m_gameFileSystem;
+}
+
 gl::MaterialManager& Map::materialManager()
 {
   return *m_materialManager;

@@ -241,6 +241,8 @@ public: // misc
   EntityModelManager& entityModelManager();
   const EntityModelManager& entityModelManager() const;
 
+  const GameFileSystem& gameFileSystem() const;
+
   gl::MaterialManager& materialManager();
   const gl::MaterialManager& materialManager() const;
 

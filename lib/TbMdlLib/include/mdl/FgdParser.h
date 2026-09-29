@@ -139,6 +139,8 @@ private:
     ParserStatus& status, std::string propertyKey);
   PropertyDefinition parseModelPathPropertyDefinition(
     ParserStatus& status, std::string propertyKey);
+  PropertyDefinition parseParticlePathPropertyDefinition(
+    ParserStatus& status, std::string propertyKey);
   PropertyDefinition parseEntityReferencePropertyDefinition(
     ParserStatus& status,
     std::string propertyKey,

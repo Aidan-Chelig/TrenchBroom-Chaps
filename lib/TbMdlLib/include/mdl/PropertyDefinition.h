@@ -58,6 +58,14 @@ struct ModelPath
   kdl_reflect_decl(ModelPath, defaultValue);
 };
 
+// An asset-relative path to a particle effect under particles/, picked from a browser.
+struct ParticlePath
+{
+  std::optional<std::string> defaultValue = std::nullopt;
+
+  kdl_reflect_decl(ParticlePath, defaultValue);
+};
+
 struct EntityReference
 {
   std::optional<std::string> defaultValue = std::nullopt;
@@ -190,6 +198,7 @@ using PropertyValueType = std::variant<
   PropertyValueTypes::LinkSource,
   PropertyValueTypes::String,
   PropertyValueTypes::ModelPath,
+  PropertyValueTypes::ParticlePath,
   PropertyValueTypes::EntityReference,
   PropertyValueTypes::EndpointReference,
   PropertyValueTypes::Boolean,

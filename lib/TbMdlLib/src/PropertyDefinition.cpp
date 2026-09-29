@@ -37,6 +37,7 @@ kdl_reflect_impl(LinkSource);
 kdl_reflect_impl(LinkTarget);
 kdl_reflect_impl(String);
 kdl_reflect_impl(ModelPath);
+kdl_reflect_impl(ParticlePath);
 kdl_reflect_impl(EntityReference);
 kdl_reflect_impl(EndpointReference);
 kdl_reflect_impl(Boolean);
@@ -114,6 +115,7 @@ std::optional<std::string> PropertyDefinition::defaultValue(
       },
       [](const PropertyValueTypes::String& value) { return value.defaultValue; },
       [](const PropertyValueTypes::ModelPath& value) { return value.defaultValue; },
+      [](const PropertyValueTypes::ParticlePath& value) { return value.defaultValue; },
       [](const PropertyValueTypes::EntityReference& value) { return value.defaultValue; },
       [](const PropertyValueTypes::EndpointReference& value) {
         return value.defaultValue;

@@ -736,6 +736,35 @@ TEST_CASE("FgdParser")
         });
     }
 
+    SECTION("parseParticlePathPropertyDefinition")
+    {
+      const auto file = R"(
+      @PointClass = particle_system : "Particle effect"
+      [
+         effect(particlepath) : "Effect" : "particles/campfire.ron" : "Asset-relative effect path"
+      ])";
+
+      auto parser = FgdParser{file, RgbaF{1.0f, 1.0f, 1.0f, 1.0f}};
+      auto status = TestParserStatus{};
+
+      CHECK(
+        parser.parseDefinitions(status)
+        == std::vector<mdl::EntityDefinition>{
+          {
+            "particle_system",
+            RgbaF{1.0f, 1.0f, 1.0f, 1.0f},
+            "Particle effect",
+            {
+              {"effect",
+               mdl::PropertyValueTypes::ParticlePath{"particles/campfire.ron"},
+               "Effect",
+               "Asset-relative effect path"},
+            },
+            mdl::PointEntityDefinition{{{-8, -8, -8}, {8, 8, 8}}, {}, {}},
+          },
+        });
+    }
+
     /**
      * Support having an integer (or decimal) as a default for a string
      * propertyDefinition. Technically a type mismatch, but appears in the wild; see:

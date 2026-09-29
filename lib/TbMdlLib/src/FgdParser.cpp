@@ -755,6 +755,10 @@ PropertyDefinition FgdParser::parsePropertyDefinition(ParserStatus& status)
   {
     return finish(parseModelPathPropertyDefinition(status, std::move(propertyKey)));
   }
+  if (kdl::ci::str_is_equal(typeName, "particlepath"))
+  {
+    return finish(parseParticlePathPropertyDefinition(status, std::move(propertyKey)));
+  }
   if (kdl::ci::str_is_equal(typeName, "entity_ref"))
   {
     const auto requiredInterface = parameters.find("requires_interface");
@@ -879,6 +883,21 @@ PropertyDefinition FgdParser::parseModelPathPropertyDefinition(
   return {
     std::move(propertyKey),
     PropertyValueTypes::ModelPath{std::move(defaultValue)},
+    std::move(shortDescription),
+    std::move(longDescription),
+    readOnly};
+}
+
+PropertyDefinition FgdParser::parseParticlePathPropertyDefinition(
+  ParserStatus& status, std::string propertyKey)
+{
+  const auto readOnly = parseReadOnlyFlag(status);
+  auto shortDescription = parsePropertyDescription();
+  auto defaultValue = parseDefaultStringValue(status);
+  auto longDescription = parsePropertyDescription();
+  return {
+    std::move(propertyKey),
+    PropertyValueTypes::ParticlePath{std::move(defaultValue)},
     std::move(shortDescription),
     std::move(longDescription),
     readOnly};

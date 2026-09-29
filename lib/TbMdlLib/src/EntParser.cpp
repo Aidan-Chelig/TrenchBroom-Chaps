@@ -280,6 +280,13 @@ auto withDefaultValue(
         }
         return modelPathValueType;
       },
+      [&](PropertyValueTypes::ParticlePath particlePathValueType) -> PropertyValueType {
+        if (hasAttribute(element, "value"))
+        {
+          particlePathValueType.defaultValue = parseString(element, "value");
+        }
+        return particlePathValueType;
+      },
       [&](PropertyValueTypes::EntityReference entityReferenceValueType)
         -> PropertyValueType {
         if (hasAttribute(element, "value"))

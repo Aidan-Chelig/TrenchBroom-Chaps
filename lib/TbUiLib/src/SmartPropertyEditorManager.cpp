@@ -35,6 +35,7 @@
 #include "ui/SmartEntityReferenceEditor.h"
 #include "ui/SmartFlagsEditor.h"
 #include "ui/SmartModelEditor.h"
+#include "ui/SmartParticleEditor.h"
 #include "ui/SmartPropertyEditor.h"
 #include "ui/SmartWadEditor.h"
 
@@ -132,6 +133,9 @@ void SmartPropertyEditorManager::createEditors(AppController& appController)
   registerEditor(
     makeSmartTypeEditorMatcher<mdl::PropertyValueTypes::ModelPath>(),
     new SmartModelEditor{appController, m_document, this});
+  registerEditor(
+    makeSmartTypeEditorMatcher<mdl::PropertyValueTypes::ParticlePath>(),
+    new SmartParticleEditor{m_document, this});
   registerEditor(
     makeSmartTypeWithSameDefinitionEditorMatcher<
       mdl::PropertyValueTypes::EntityReference>(),
