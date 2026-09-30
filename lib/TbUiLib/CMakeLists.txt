@@ -125,6 +125,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/OnePaneMapView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PopupButton.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PopupWindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PrefabUtils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferenceDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferencePane.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/QColorUtils.cpp
@@ -316,6 +317,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/OnePaneMapView.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PopupButton.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PopupWindow.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PrefabUtils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PreferenceDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PreferencePane.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/QColorUtils.h

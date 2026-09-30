@@ -19,6 +19,7 @@
 
 #include "ui/CreateEntityTool.h"
 
+#include "base/Logger.h"
 #include "gl/Camera.h"
 #include "mdl/BrushFace.h"
 #include "mdl/BrushNode.h"
@@ -32,7 +33,9 @@
 #include "mdl/Map.h"
 #include "mdl/Map_Entities.h"
 #include "mdl/Map_Geometry.h"
+#include "mdl/ModelUtils.h"
 #include "mdl/PickResult.h"
+#include "mdl/Prefab.h"
 #include "mdl/TransactionScope.h"
 #include "mdl/WorldNode.h"
 #include "ui/MapDocument.h"
@@ -65,30 +68,55 @@ bool CreateEntityTool::createEntity(const std::string& classname)
 
   map.startTransaction(
     "Create '" + definition->name + "'", mdl::TransactionScope::LongRunning);
-  m_entity = createPointEntity(map, *definition, {0, 0, 0});
+  if (auto* entityNode = createPointEntity(map, *definition, {0, 0, 0}))
+  {
+    m_nodes = {entityNode};
+    return true;
+  }
 
-  return m_entity != nullptr;
+  map.cancelTransaction();
+  return false;
+}
+
+bool CreateEntityTool::createPrefab(const std::string& name)
+{
+  auto& map = m_document.map();
+  const auto path = mdl::prefabPath(mdl::prefabDirectory(map), name);
+
+  m_referenceBounds = map.referenceBounds();
+
+  map.startTransaction("Place Prefab '" + name + "'", mdl::TransactionScope::LongRunning);
+  return mdl::placePrefab(map, path) | kdl::transform([&]() {
+           m_nodes = map.selection().nodes;
+           return true;
+         })
+         | kdl::transform_error([&](const auto& e) {
+             map.logger().error() << e.msg;
+             map.cancelTransaction();
+             return false;
+           })
+         | kdl::value();
 }
 
 void CreateEntityTool::removeEntity()
 {
-  contract_pre(m_entity != nullptr);
+  contract_pre(!m_nodes.empty());
 
   m_document.map().cancelTransaction();
-  m_entity = nullptr;
+  m_nodes.clear();
 }
 
 void CreateEntityTool::commitEntity()
 {
-  contract_pre(m_entity != nullptr);
+  contract_pre(!m_nodes.empty());
 
   m_document.map().commitTransaction();
-  m_entity = nullptr;
+  m_nodes.clear();
 }
 
 void CreateEntityTool::updateEntityPosition2D(const vm::ray3d& pickRay)
 {
-  contract_pre(m_entity != nullptr);
+  contract_pre(!m_nodes.empty());
 
   const auto toMin = m_referenceBounds.min - pickRay.origin;
   const auto toMax = m_referenceBounds.max - pickRay.origin;
@@ -99,8 +127,8 @@ void CreateEntityTool::updateEntityPosition2D(const vm::ray3d& pickRay)
 
   auto& map = m_document.map();
   const auto& grid = map.grid();
-  const auto delta = grid.moveDeltaForBounds(
-    dragPlane, m_entity->logicalBounds(), map.worldBounds(), pickRay);
+  const auto delta =
+    grid.moveDeltaForBounds(dragPlane, bounds(), map.worldBounds(), pickRay);
 
   if (!vm::is_zero(delta, vm::Cd::almost_zero()))
   {
@@ -113,24 +141,27 @@ void CreateEntityTool::updateEntityPosition3D(
 {
   using namespace mdl::HitFilters;
 
-  contract_pre(m_entity != nullptr);
+  contract_pre(!m_nodes.empty());
 
   auto& map = m_document.map();
 
   auto delta = vm::vec3d{};
   const auto& grid = map.grid();
-  const auto& hit = pickResult.first(type(mdl::BrushNode::BrushHitType));
+
+  // a prefab's own brushes are selected while it is dragged, and must not be hit
+  const auto& hit =
+    pickResult.first(type(mdl::BrushNode::BrushHitType) && !transitivelySelected());
   if (const auto faceHandle = mdl::hitToFaceHandle(hit))
   {
     const auto& face = faceHandle->face();
-    delta = grid.moveDeltaForBounds(
-      face.boundary(), m_entity->logicalBounds(), map.worldBounds(), pickRay);
+    delta =
+      grid.moveDeltaForBounds(face.boundary(), bounds(), map.worldBounds(), pickRay);
   }
   else
   {
     const auto newPosition = vm::point_at_distance(
       pickRay, static_cast<double>(gl::Camera::DefaultPointDistance));
-    const auto boundsCenter = m_entity->logicalBounds().center();
+    const auto boundsCenter = bounds().center();
     delta = grid.moveDeltaForPoint(boundsCenter, newPosition - boundsCenter);
   }
 
@@ -138,6 +169,11 @@ void CreateEntityTool::updateEntityPosition3D(
   {
     translateSelection(map, delta);
   }
+}
+
+vm::bbox3d CreateEntityTool::bounds() const
+{
+  return mdl::computeLogicalBounds(m_nodes);
 }
 
 } // namespace tb::ui

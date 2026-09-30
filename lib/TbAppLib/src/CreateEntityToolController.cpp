@@ -92,16 +92,18 @@ bool CreateEntityToolController::shouldAcceptDrop(
   const InputState&, const std::string& payload) const
 {
   const auto parts = kdl::str_split(payload, ":");
-  return parts.size() == 2 && parts[0] == "entity";
+  return parts.size() == 2 && (parts[0] == "entity" || parts[0] == "prefab");
 }
 
 std::unique_ptr<DropTracker> CreateEntityToolController::acceptDrop(
   const InputState& inputState, const std::string& payload)
 {
   const auto parts = kdl::str_split(payload, ":");
-  contract_assert(parts.size() == 2 && parts[0] == "entity");
+  contract_assert(parts.size() == 2 && (parts[0] == "entity" || parts[0] == "prefab"));
 
-  return m_tool.createEntity(parts[1]) ? createDropTracker(inputState) : nullptr;
+  const auto created =
+    parts[0] == "entity" ? m_tool.createEntity(parts[1]) : m_tool.createPrefab(parts[1]);
+  return created ? createDropTracker(inputState) : nullptr;
 }
 
 bool CreateEntityToolController::cancel()

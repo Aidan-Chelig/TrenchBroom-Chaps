@@ -83,6 +83,7 @@
 #include "ui/MapViewActivationTracker.h"
 #include "ui/MapViewToolBox.h"
 #include "ui/MapWindow.h"
+#include "ui/PrefabUtils.h"
 #include "ui/QKeySequenceUtils.h"
 #include "ui/SelectionTool.h"
 #include "ui/SignalDelayer.h"
@@ -1381,6 +1382,13 @@ void MapViewBase::showPopupMenuLater()
 
     menu.addSeparator();
   }
+
+  auto* createPrefabAction =
+    menu.addAction(tr("Create Entity from Selection..."), this, [&]() {
+      createPrefabFromSelection(this, map);
+    });
+  createPrefabAction->setEnabled(
+    canCreatePrefabFromSelection(map) && !m_toolBox.anyModalToolActive());
 
   menu.addMenu(makeEntityGroupsMenu(mdl::EntityDefinitionType::Point));
   menu.addMenu(makeEntityGroupsMenu(mdl::EntityDefinitionType::Brush));

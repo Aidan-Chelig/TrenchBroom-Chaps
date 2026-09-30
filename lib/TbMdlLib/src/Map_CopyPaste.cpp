@@ -217,6 +217,8 @@ void copyAndSetLinkIds(
   }
 }
 
+} // namespace
+
 bool pasteNodes(Map& map, const std::vector<Node*>& nodes)
 {
   const auto nodesToAdd = extractNodesToPaste(nodes, parentForNodes(map));
@@ -239,6 +241,9 @@ bool pasteNodes(Map& map, const std::vector<Node*>& nodes)
 
   return true;
 }
+
+namespace
+{
 
 bool pasteBrushFaces(Map& map, const std::vector<BrushFace>& faces)
 {

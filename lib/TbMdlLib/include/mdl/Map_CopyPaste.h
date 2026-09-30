@@ -20,10 +20,12 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace tb::mdl
 {
 class Map;
+class Node;
 
 enum class PasteType;
 
@@ -31,6 +33,12 @@ std::string serializeSelectedNodes(Map& map);
 std::string serializeSelectedBrushFaces(Map& map);
 
 PasteType paste(Map& map, const std::string& str);
+
+/**
+ * Adds the given parsed nodes to the map like a paste and selects them. The map takes
+ * ownership of the nodes. Returns false if no nodes were added.
+ */
+bool pasteNodes(Map& map, const std::vector<Node*>& nodes);
 
 
 } // namespace tb::mdl

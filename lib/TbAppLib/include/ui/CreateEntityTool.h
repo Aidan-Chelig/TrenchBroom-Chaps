@@ -25,12 +25,13 @@
 #include "vm/ray.h"
 
 #include <string>
+#include <vector>
 
 namespace tb
 {
 namespace mdl
 {
-class EntityNode;
+class Node;
 class PickResult;
 } // namespace mdl
 
@@ -38,23 +39,30 @@ namespace ui
 {
 class MapDocument;
 
+/**
+ * Places a point entity or a prefab that is dragged into a map view.
+ */
 class CreateEntityTool : public Tool
 {
 private:
   MapDocument& m_document;
-  mdl::EntityNode* m_entity = nullptr;
+  std::vector<mdl::Node*> m_nodes;
   vm::bbox3d m_referenceBounds;
 
 public:
   explicit CreateEntityTool(MapDocument& document);
 
   bool createEntity(const std::string& classname);
+  bool createPrefab(const std::string& name);
   void removeEntity();
   void commitEntity();
 
   void updateEntityPosition2D(const vm::ray3d& pickRay);
   void updateEntityPosition3D(
     const vm::ray3d& pickRay, const mdl::PickResult& pickResult);
+
+private:
+  vm::bbox3d bounds() const;
 };
 
 } // namespace ui

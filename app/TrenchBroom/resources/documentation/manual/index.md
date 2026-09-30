@@ -1260,6 +1260,12 @@ To create a group, make sure that no tool is currently active and select some ob
 
 To add objects to an existing group, select the objects you wish to add to the group, then right click on an object already existing to that group and select "Add Objects to GROUPNAME", where GROUPNAME is the name of the group. Likewise, you can remove objects from a group by opening that group, selecting the objects you wish to remove from the group, and selecting "Remove Objects from GROUPNAME" from the [map view context menu](#map_view_context_menu). The removed objects are added to the current layer. If you remove all objects from a group, the group is deleted automatically.
 
+### Prefabs {#prefabs}
+
+A prefab is a group saved to its own file so that you can place it into any map of the same game, with every entity keeping its properties. To create one, select some brushes, entities or groups, right click in a viewport and choose "Create Entity from Selection...". CautionTrench asks for a name, groups the selection under that name (a single selected group is renamed instead), and saves the group as `prefabs/<name>.map` in the game's search path, e.g. `assets/prefabs` next to `assets/maps`.
+
+Prefabs appear at the top of the [entity browser](#entity_browser) under "Prefabs", drawn as the edges of their brushes and the models of their entities. Drag one into a viewport to place a copy. Each placed prefab is an ordinary group named after the prefab and independent of the prefab file and of other copies; to update a prefab, edit a copy and create the prefab again under the same name. Right click a prefab in the entity browser to rename it, move it to the trash, or show its folder. Prefab files change only through these commands, never when a map is saved.
+
 ## Linked Groups {#linked_groups}
 
 Groups can also be linked together to allow a form of instancing. Linked groups contain the same objects, but can be transformed into different positions and shapes as a whole. Changing one of the linked groups will update all the other linked groups. Linked groups are useful to build reusable structures such as doorways that you want to keep in sync. The workflow for linked groups is always the same:
