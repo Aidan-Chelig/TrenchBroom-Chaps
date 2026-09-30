@@ -64,6 +64,7 @@ struct EntityDefinitionClassInfo
   std::vector<std::string> superClasses;
   std::vector<EntityInterfaceDefinition> interfaces;
   std::optional<bool> useModelBounds = std::nullopt;
+  std::optional<MuzzleDefinition> muzzle = std::nullopt;
 
   kdl_reflect_decl(
     EntityDefinitionClassInfo,
@@ -78,7 +79,8 @@ struct EntityDefinitionClassInfo
     propertyDefinitions,
     superClasses,
     interfaces,
-    useModelBounds);
+    useModelBounds,
+    muzzle);
 };
 
 bool addPropertyDefinition(

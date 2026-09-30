@@ -126,6 +126,10 @@ void inheritPropertyDefinitions(
   {
     inheritingClass.useModelBounds = superClass.useModelBounds;
   }
+  if (!inheritingClass.muzzle)
+  {
+    inheritingClass.muzzle = superClass.muzzle;
+  }
   if (!inheritingClass.size)
   {
     inheritingClass.size = superClass.size;
@@ -483,6 +487,7 @@ std::optional<EntityDefinition> createDefinition(
         std::move(classInfo.modelDefinition).value_or(ModelDefinition{}),
         std::move(classInfo.decalDefinition).value_or(DecalDefinition{}),
         classInfo.useModelBounds.value_or(false),
+        classInfo.muzzle,
       },
       0u,
       std::move(interfaces),

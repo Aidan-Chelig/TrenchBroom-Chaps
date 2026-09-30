@@ -124,6 +124,7 @@ private:
   std::vector<std::string> parseSuperClasses();
   ModelDefinition parseModel(ParserStatus& status, bool allowEmptyExpression);
   DecalDefinition parseDecal();
+  std::optional<MuzzleDefinition> parseMuzzle(ParserStatus& status);
   std::string parseNamedValue(ParserStatus& status, const std::string& name);
   void skipClassProperty(ParserStatus& status);
 

@@ -241,4 +241,6 @@ vm::vec3d safeGetModelScale(
     .value_or(vm::vec3d{1, 1, 1});
 }
 
+kdl_reflect_impl(MuzzleDefinition);
+
 } // namespace tb::mdl

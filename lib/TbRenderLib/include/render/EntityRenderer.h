@@ -144,6 +144,7 @@ private:
   void renderTransparentModels(RenderContext& renderContext, RenderBatch& renderBatch);
   void renderClassnames(RenderContext& renderContext, RenderBatch& renderBatch);
   void renderAngles(RenderContext& renderContext, RenderBatch& renderBatch);
+  void renderMuzzles(RenderContext& renderContext, RenderBatch& renderBatch);
   void renderPaths(RenderContext& renderContext, RenderBatch& renderBatch);
   std::vector<vm::vec3f> arrowHead(float length, float width) const;
 

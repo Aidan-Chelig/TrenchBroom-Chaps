@@ -44,9 +44,15 @@ struct PointEntityDefinition
   ModelDefinition modelDefinition;
   DecalDefinition decalDefinition;
   bool useModelBounds = false;
+  std::optional<MuzzleDefinition> muzzle = std::nullopt;
 
   kdl_reflect_decl(
-    PointEntityDefinition, bounds, modelDefinition, decalDefinition, useModelBounds);
+    PointEntityDefinition,
+    bounds,
+    modelDefinition,
+    decalDefinition,
+    useModelBounds,
+    muzzle);
 };
 
 struct EntityDefinition

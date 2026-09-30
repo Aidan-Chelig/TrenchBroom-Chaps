@@ -98,5 +98,20 @@ vm::vec3d safeGetModelScale(
   const el::VariableStore& variableStore,
   const std::optional<el::ExpressionNode>& defaultScaleExpression);
 
+/**
+ * Where a point entity's model fires from, given by the FGD class attribute
+ * `muzzle(x y z, dx dy dz)`: a point and a direction in the space the model's vertices
+ * are in, before the entity's model transformation (origin, rotation and model scale).
+ * The editor marks it with an arrow.
+ */
+struct MuzzleDefinition
+{
+  vm::vec3d position;
+  /** Normalized. */
+  vm::vec3d direction;
+
+  kdl_reflect_decl(MuzzleDefinition, position, direction);
+};
+
 } // namespace mdl
 } // namespace tb

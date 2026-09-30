@@ -2478,6 +2478,19 @@ The displayed box follows the model's origin, rotation, and scale, including non
 
 This option is inherited from FGD base classes. Use `modelbounds(0)` to override an inherited setting. In ENT files, add `modelbounds="true"` to the `<point>` element; `modelbounds="false"` keeps the usual fixed box. This controls editor bounds; it does not generate collision geometry in the map.
 
+#### Marking a Muzzle
+
+Add `muzzle(X Y Z, DX DY DZ)` to an FGD point class to mark where its model fires from. The editor draws an arrow from the point `X Y Z` in the direction `DX DY DZ`, with a faint line running on along its aim:
+
+```fgd
+@PointClass model({ "path": "props/shotgun.glb", "scale": scale * 32 }) muzzle(0 0.58 0.18, 0 1 0) = shotgun_weapon : "Shotgun"
+[
+    scale(float) : "Scale" : "1"
+]
+```
+
+Both are in the model's own space, as the editor loads it: before the entity's origin, rotation and model scale are applied, so the arrow stays on the model as it turns and scales. Models loaded through Assimp that carry no axis metadata, such as glTF and OBJ files, are turned so that their +Z is the editor's +X, their +X is +Y, and their +Y is +Z. The arrow is not drawn for an entity whose `muzzle` property names another entity to fire from; that entity's class can mark its own muzzle, for example `muzzle(0 0 0, 1 0 0)` for one that fires the way it faces. This option is inherited from FGD base classes.
+
 #### Basic Examples
 
 So a valid model definitions might look like this:

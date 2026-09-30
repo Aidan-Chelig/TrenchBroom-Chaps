@@ -58,6 +58,33 @@ TEST_CASE("FgdParser")
     CHECK_FALSE(definitions[2].pointEntityDefinition->useModelBounds);
   }
 
+  SECTION("muzzle")
+  {
+    const auto file = R"(
+      @BaseClass muzzle(0 0.5 0.1, 0 2 0) = Gun []
+      @PointClass base(Gun) = pistol []
+      @PointClass base(Gun) muzzle(-1 0 -0.25, 1 0 0) = rifle []
+      @PointClass muzzle(0 0 0, 0 0 0) = jammed []
+      @SolidClass muzzle(0 0 0, 1 0 0) = func_gun []
+      @PointClass = ordinary []
+    )";
+    auto parser = FgdParser{file, RgbaF{1, 1, 1, 1}};
+    auto status = TestParserStatus{};
+    const auto definitions = parser.parseDefinitions(status) | kdl::value();
+    REQUIRE(definitions.size() == 5u);
+    CHECK(
+      definitions[0].pointEntityDefinition->muzzle
+      == MuzzleDefinition{{0, 0.5, 0.1}, {0, 1, 0}});
+    CHECK(
+      definitions[1].pointEntityDefinition->muzzle
+      == MuzzleDefinition{{-1, 0, -0.25}, {1, 0, 0}});
+    CHECK(definitions[2].pointEntityDefinition->muzzle == std::nullopt);
+    CHECK(definitions[3].pointEntityDefinition == std::nullopt);
+    CHECK(definitions[4].pointEntityDefinition->muzzle == std::nullopt);
+    // The zero direction, and the muzzle on a solid class.
+    CHECK(status.countStatus(LogLevel::Warn) == 2u);
+  }
+
   SECTION("interfaces and references")
   {
     const auto file = R"(

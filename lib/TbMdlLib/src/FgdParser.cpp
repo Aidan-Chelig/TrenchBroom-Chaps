@@ -348,6 +348,10 @@ EntityDefinitionClassInfo FgdParser::parseSolidClassInfo(ParserStatus& status)
     status.warn(
       classInfo.location, "Solid entity definition must not have decal definitions");
   }
+  if (classInfo.muzzle)
+  {
+    status.warn(classInfo.location, "Solid entity definition must not have a muzzle");
+  }
   return classInfo;
 }
 
@@ -430,6 +434,14 @@ EntityDefinitionClassInfo FgdParser::parseClassInfo(
         status.warn(token.location(), "Found multiple decal properties");
       }
       classInfo.decalDefinition = parseDecal();
+    }
+    else if (kdl::ci::str_is_equal(typeName, "muzzle"))
+    {
+      if (classInfo.muzzle)
+      {
+        status.warn(token.location(), "Found multiple muzzle properties");
+      }
+      classInfo.muzzle = parseMuzzle(status);
     }
     else
     {
@@ -538,6 +550,22 @@ DecalDefinition FgdParser::parseDecal()
            [](auto expression) { return DecalDefinition{std::move(expression)}; })
          | kdl::if_error([](const auto& e) { throw ParserException{e.msg}; })
          | kdl::value();
+}
+
+std::optional<MuzzleDefinition> FgdParser::parseMuzzle(ParserStatus& status)
+{
+  const auto location = m_tokenizer.nextToken(FgdToken::OParenthesis).location();
+  const auto position = parseVector();
+  m_tokenizer.nextToken(FgdToken::Comma);
+  const auto direction = parseVector();
+  m_tokenizer.nextToken(FgdToken::CParenthesis);
+
+  if (vm::is_zero(direction, vm::Cd::almost_zero()))
+  {
+    status.warn(location, "Muzzle direction must not be zero");
+    return std::nullopt;
+  }
+  return MuzzleDefinition{position, vm::normalize(direction)};
 }
 
 void FgdParser::skipClassProperty(ParserStatus& /* status */)

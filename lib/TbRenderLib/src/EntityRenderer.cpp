@@ -40,6 +40,7 @@
 #include "vm/vec.h"
 
 #include <array>
+#include <cmath>
 #include <ranges>
 #include <vector>
 
@@ -215,6 +216,7 @@ void EntityRenderer::renderOpaque(RenderContext& renderContext, RenderBatch& ren
     renderModels(renderContext, renderBatch);
     renderClassnames(renderContext, renderBatch);
     renderAngles(renderContext, renderBatch);
+    renderMuzzles(renderContext, renderBatch);
     renderPaths(renderContext, renderBatch);
   }
 }
@@ -452,6 +454,88 @@ void EntityRenderer::renderAngles(RenderContext& renderContext, RenderBatch& ren
         | kdl::ranges::to<std::vector>();
       renderService.renderPolygonOutline(vertices);
     }
+  }
+}
+
+void EntityRenderer::renderMuzzles(RenderContext& renderContext, RenderBatch& renderBatch)
+{
+  // An entity whose "muzzle" property names another entity fires from that entity
+  // instead, which marks its own muzzle if its class has one.
+  static constexpr auto MuzzleOverrideKey = "muzzle";
+  // Lengths in map units: the arrow out of the muzzle, its head, and the aim line
+  // running on from its tip.
+  static constexpr auto ArrowLength = 14.0;
+  static constexpr auto ArrowHeadLength = 4.0;
+  static constexpr auto ArrowHeadWidth = 1.5;
+  static constexpr auto AimLength = 128.0;
+
+  if (!m_showHiddenEntities && !renderContext.showPointEntities())
+  {
+    return;
+  }
+
+  const auto arrowColor = Color{RgbaF{1.0f, 0.72f, 0.1f, 1.0f}};
+  const auto aimColor = Color{RgbaF{1.0f, 0.72f, 0.1f, 0.4f}};
+
+  auto renderService = RenderService{renderContext, renderBatch};
+  // The muzzle sits on the model's surface, so it shows through the model.
+  renderService.setShowOccludedObjectsTransparent();
+
+  for (const auto* entityNode : m_entities)
+  {
+    if (!m_showHiddenEntities && !m_editorContext.visible(*entityNode))
+    {
+      continue;
+    }
+
+    const auto& entity = entityNode->entity();
+    const auto* pointDefinition = mdl::getPointEntityDefinition(entity.definition());
+    if (!pointDefinition || !pointDefinition->muzzle)
+    {
+      continue;
+    }
+    if (const auto* target = entity.property(MuzzleOverrideKey);
+        target && !target->empty())
+    {
+      continue;
+    }
+
+    const auto& transformation = entity.modelTransformation(
+      entityNode->entityPropertyConfig().defaultModelScaleExpression);
+    const auto position = transformation * pointDefinition->muzzle->position;
+    const auto scaledDirection =
+      vm::strip_translation(transformation) * pointDefinition->muzzle->direction;
+    if (vm::is_zero(scaledDirection, vm::Cd::almost_zero()))
+    {
+      continue;
+    }
+    const auto direction = vm::normalize(scaledDirection);
+    const auto side = vm::normalize(vm::cross(
+      direction,
+      std::abs(direction.z()) < 0.9 ? vm::vec3d{0, 0, 1} : vm::vec3d{1, 0, 0}));
+    const auto up = vm::cross(side, direction);
+
+    const auto tip = position + direction * ArrowLength;
+    const auto headBase = tip - direction * ArrowHeadLength;
+    const auto arrow = std::vector{
+      vm::vec3f{position},
+      vm::vec3f{tip},
+      vm::vec3f{tip},
+      vm::vec3f{headBase + side * ArrowHeadWidth},
+      vm::vec3f{tip},
+      vm::vec3f{headBase - side * ArrowHeadWidth},
+      vm::vec3f{tip},
+      vm::vec3f{headBase + up * ArrowHeadWidth},
+      vm::vec3f{tip},
+      vm::vec3f{headBase - up * ArrowHeadWidth},
+    };
+
+    renderService.setLineWidth(entityNode->transitivelySelected() ? 2.0f : 1.0f);
+    renderService.setForegroundColor(arrowColor);
+    renderService.renderLines(arrow);
+    renderService.renderHandle(vm::vec3f{position});
+    renderService.setForegroundColor(aimColor);
+    renderService.renderLine(vm::vec3f{tip}, vm::vec3f{tip + direction * AimLength});
   }
 }
 
