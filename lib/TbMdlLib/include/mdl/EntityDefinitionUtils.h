@@ -31,6 +31,7 @@
 namespace tb::mdl
 {
 
+class Entity;
 class Map;
 
 enum class EntityDefinitionSortOrder
@@ -90,5 +91,13 @@ void addOrSetDefaultEntityLinkProperties(
  * Origin, or add an "origin" property of that type if it is missing.
  */
 void addOrConvertOriginProperties(std::vector<EntityDefinition>& entityDefinitions);
+
+/**
+ * Whether the entity inspector shows the given property of the entity: yes, unless its
+ * definition has a `show_if` condition the entity does not meet, or the property that
+ * condition tests is hidden itself (a setting under a toggle that is under another one).
+ * A property the entity does not set counts as its definition's default.
+ */
+bool isPropertyShown(const Entity& entity, const std::string& key);
 
 } // namespace tb::mdl

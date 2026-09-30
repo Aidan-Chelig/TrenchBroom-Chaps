@@ -101,6 +101,45 @@ TEST_CASE("FgdParser")
     CHECK(name->requiresUniqueName);
   }
 
+  SECTION("show_if conditions")
+  {
+    const auto file = R"(
+      @PointClass = prop_model [
+        physics(choices) : "Physics" : "static" = [ "static" : "Static" "dynamic" : "Dynamic" ]
+        spin(choices, show_if="physics=static") : "Spin" : "false" = [ "true" : "true" "false" : "false" ]
+        spin_speed(float, show_if="spin") : "Spin Speed" : 360 : ""
+        end_behavior(string, show_if="!looping") : "End Behavior" : "" : ""
+        name(target_source, unique=true, show_if="physics!=dynamic|none") : "Name"
+        broken(string, show_if="=spin") : "Broken" : "" : ""
+      ]
+    )";
+    auto parser = FgdParser{file, RgbaF{1.0f, 1.0f, 1.0f, 1.0f}};
+    auto status = TestParserStatus{};
+
+    const auto definitions = parser.parseDefinitions(status) | kdl::value();
+    REQUIRE(definitions.size() == 1u);
+    const auto showIf = [&](const std::string& key) {
+      const auto* definition = getPropertyDefinition(definitions.front(), key);
+      REQUIRE(definition != nullptr);
+      return definition->showIf;
+    };
+
+    CHECK_FALSE(showIf("physics").has_value());
+    REQUIRE(showIf("spin").has_value());
+    CHECK(*showIf("spin") == PropertyCondition{"physics", {"static"}, false});
+    REQUIRE(showIf("spin_speed").has_value());
+    CHECK(*showIf("spin_speed") == PropertyCondition{"spin", {}, false});
+    REQUIRE(showIf("end_behavior").has_value());
+    CHECK(*showIf("end_behavior") == PropertyCondition{"looping", {}, true});
+    REQUIRE(showIf("name").has_value());
+    CHECK(*showIf("name") == PropertyCondition{"physics", {"dynamic", "none"}, true});
+    CHECK(getPropertyDefinition(definitions.front(), "name")->requiresUniqueName);
+
+    // A malformed condition is dropped with a warning; the property still shows.
+    CHECK_FALSE(showIf("broken").has_value());
+    CHECK(status.countStatus(LogLevel::Warn) == 1u);
+  }
+
   SECTION("Included files")
   {
     const auto basePath = getFixtureRoot() / "games/";

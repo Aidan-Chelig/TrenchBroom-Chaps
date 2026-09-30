@@ -19,6 +19,7 @@
 
 #include "mdl/EntityDefinitionUtils.h"
 
+#include "mdl/Entity.h"
 #include "mdl/EntityProperties.h"
 
 namespace tb::mdl
@@ -179,6 +180,40 @@ void addOrConvertOriginProperties(std::vector<EntityDefinition>& entityDefinitio
   {
     addOrConvertOriginProperties(entityDefinition);
   }
+}
+
+bool isPropertyShown(const Entity& entity, const std::string& key)
+{
+  // Follows the chain of conditions up, and treats a cycle in it as always shown
+  // rather than hiding every property on it for good.
+  auto seen = std::vector<std::string>{};
+  auto current = key;
+  while (const auto* definition = getPropertyDefinition(entity.definition(), current))
+  {
+    if (!definition->showIf || std::ranges::find(seen, current) != seen.end())
+    {
+      return true;
+    }
+    seen.push_back(current);
+
+    const auto& condition = *definition->showIf;
+    auto testedValue = std::string{};
+    if (const auto* value = entity.property(condition.key))
+    {
+      testedValue = *value;
+    }
+    else if (
+      const auto* tested = getPropertyDefinition(entity.definition(), condition.key))
+    {
+      testedValue = PropertyDefinition::defaultValue(*tested).value_or("");
+    }
+    if (!conditionHolds(condition, testedValue))
+    {
+      return false;
+    }
+    current = condition.key;
+  }
+  return true;
 }
 
 } // namespace tb::mdl

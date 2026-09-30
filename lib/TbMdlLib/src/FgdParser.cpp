@@ -735,6 +735,19 @@ PropertyDefinition FgdParser::parsePropertyDefinition(ParserStatus& status)
           location, "Property parameter 'unique' must be true or false"};
       }
     }
+    if (const auto showIf = parameters.find("show_if"); showIf != parameters.end())
+    {
+      definition.showIf = parsePropertyCondition(showIf->second);
+      if (!definition.showIf)
+      {
+        // Showing the property always beats failing the whole file.
+        status.warn(
+          location,
+          fmt::format(
+            "Ignoring property parameter 'show_if': '{}' is not a condition",
+            showIf->second));
+      }
+    }
     return definition;
   };
 

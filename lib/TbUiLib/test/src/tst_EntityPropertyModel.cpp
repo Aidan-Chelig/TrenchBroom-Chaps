@@ -116,6 +116,22 @@ TEST_CASE("EntityPropertyModel")
         {},
         {}},
      }},
+    {"toggle_entity",
+     {},
+     {},
+     {
+       {"spin",
+        mdl::PropertyValueTypes::Choice{{{"true", "true"}, {"false", "false"}}, "false"},
+        {},
+        {}},
+       {"spin_speed",
+        mdl::PropertyValueTypes::Float{360.0f},
+        {},
+        {},
+        false,
+        false,
+        mdl::PropertyCondition{"spin", {}, false}},
+     }},
   });
 
   auto* sourceEntity = new mdl::EntityNode{mdl::Entity{{
@@ -502,6 +518,44 @@ TEST_CASE("EntityPropertyModel")
 
       const auto rowKey = model.propertyKey(rowIndex);
       CHECK(rowKey == specialKey);
+    }
+
+    SECTION("properties under a show_if condition")
+    {
+      auto* stillEntityNode = new mdl::EntityNode{mdl::Entity{{
+        {"classname", "toggle_entity"},
+        {"spin_speed", "90"},
+      }}};
+      auto* spinningEntityNode = new mdl::EntityNode{mdl::Entity{{
+        {"classname", "toggle_entity"},
+        {"spin", "true"},
+      }}};
+
+      mdl::addNodes(
+        map,
+        {{
+          &mdl::parentForNodes(map),
+          {stillEntityNode, spinningEntityNode},
+        }});
+
+      // Hidden while its toggle is off, even though the entity sets it.
+      mdl::selectNodes(map, {stillEntityNode});
+      model.updateFromMap();
+      CHECK(model.rowIndexForPropertyKey("spin") != -1);
+      CHECK(model.rowIndexForPropertyKey("spin_speed") == -1);
+
+      // Shown, with its default, once the toggle is on.
+      mdl::deselectAll(map);
+      mdl::selectNodes(map, {spinningEntityNode});
+      model.updateFromMap();
+      const auto speedRow = model.rowIndexForPropertyKey("spin_speed");
+      REQUIRE(speedRow != -1);
+      CHECK(model.rows()[static_cast<size_t>(speedRow)].valueState == ValueState::Unset);
+
+      // Shown while the condition holds for any one of the selected entities.
+      mdl::selectNodes(map, {stillEntityNode, spinningEntityNode});
+      model.updateFromMap();
+      CHECK(model.rowIndexForPropertyKey("spin_speed") != -1);
     }
   }
 }

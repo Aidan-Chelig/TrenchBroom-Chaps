@@ -18,6 +18,7 @@
  */
 
 #include "mdl/CatchConfig.h"
+#include "mdl/Entity.h"
 #include "mdl/EntityDefinition.h"
 #include "mdl/EntityDefinitionClassInfo.h"
 #include "mdl/EntityDefinitionUtils.h"
@@ -202,6 +203,71 @@ TEST_CASE("EntityDefinitionUtils")
     addOrConvertOriginProperties(definitions);
 
     CHECK(definitions == expectedDefinitions);
+  }
+
+  SECTION("isPropertyShown")
+  {
+    using namespace PropertyValueTypes;
+
+    const auto yesNo = [](std::string defaultValue) {
+      return Choice{{{"true", "true"}, {"false", "false"}}, std::move(defaultValue)};
+    };
+    const auto shownIf = [](PropertyDefinition definition, PropertyCondition condition) {
+      definition.showIf = std::move(condition);
+      return definition;
+    };
+    const auto definition = EntityDefinition{
+      "prop_model",
+      {},
+      "",
+      {
+        PropertyDefinition{
+          "physics",
+          Choice{{{"static", "Static"}, {"dynamic", "Dynamic"}}, "static"},
+          "",
+          ""},
+        shownIf(
+          PropertyDefinition{"spin", yesNo("false"), "", ""},
+          {"physics", {"static"}, false}),
+        shownIf(
+          PropertyDefinition{"spin_speed", Float{360.0f}, "", ""}, {"spin", {}, false}),
+        PropertyDefinition{"looping", yesNo("false"), "", ""},
+        shownIf(
+          PropertyDefinition{"end_behavior", String{}, "", ""}, {"looping", {}, true}),
+        shownIf(PropertyDefinition{"loop_a", String{}, "", ""}, {"loop_b", {}, false}),
+        shownIf(PropertyDefinition{"loop_b", String{}, "", ""}, {"loop_a", {}, false}),
+      },
+      PointEntityDefinition{}};
+
+    auto entity = Entity{{{"classname", "prop_model"}}};
+    entity.setDefinition(&definition);
+
+    // Unset, a property counts as its default: a Static prop offers Spin, which is off.
+    CHECK(isPropertyShown(entity, "physics"));
+    CHECK(isPropertyShown(entity, "spin"));
+    CHECK_FALSE(isPropertyShown(entity, "spin_speed"));
+    CHECK(isPropertyShown(entity, "end_behavior"));
+    CHECK(isPropertyShown(entity, "not_in_the_definition"));
+
+    entity.addOrUpdateProperty("spin", "TRUE");
+    CHECK(isPropertyShown(entity, "spin_speed"));
+
+    // A setting hides with its toggle, even while its own condition holds.
+    entity.addOrUpdateProperty("physics", "Dynamic");
+    CHECK_FALSE(isPropertyShown(entity, "spin"));
+    CHECK_FALSE(isPropertyShown(entity, "spin_speed"));
+
+    entity.addOrUpdateProperty("looping", "1");
+    CHECK_FALSE(isPropertyShown(entity, "end_behavior"));
+    entity.addOrUpdateProperty("looping", "false");
+    CHECK(isPropertyShown(entity, "end_behavior"));
+
+    // Conditions that go round in a circle end rather than loop forever.
+    CHECK_FALSE(isPropertyShown(entity, "loop_a"));
+    entity.addOrUpdateProperty("loop_a", "yes");
+    entity.addOrUpdateProperty("loop_b", "yes");
+    CHECK(isPropertyShown(entity, "loop_a"));
+    CHECK(isPropertyShown(entity, "loop_b"));
   }
 }
 

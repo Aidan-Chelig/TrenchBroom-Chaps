@@ -22,6 +22,9 @@
 #include "kd/optional_utils.h"
 #include "kd/overload.h"
 #include "kd/reflection_impl.h"
+#include "kd/string_compare.h"
+#include "kd/string_format.h"
+#include "kd/string_utils.h"
 
 #include <fmt/format.h>
 
@@ -96,6 +99,69 @@ std::ostream& operator<<(std::ostream& lhs, const PropertyValueType& rhs)
 {
   std::visit([&](const auto& x) { lhs << x; }, rhs);
   return lhs;
+}
+
+kdl_reflect_impl(PropertyCondition);
+
+std::optional<PropertyCondition> parsePropertyCondition(const std::string_view str)
+{
+  auto condition = PropertyCondition{};
+  auto rest = kdl::str_trim(str);
+  if (rest.starts_with('!'))
+  {
+    condition.negated = true;
+    rest = kdl::str_trim(std::string_view{rest}.substr(1));
+  }
+
+  if (const auto equals = rest.find('='); equals != std::string::npos)
+  {
+    auto key = std::string_view{rest}.substr(0, equals);
+    if (key.ends_with('!'))
+    {
+      condition.negated = !condition.negated;
+      key.remove_suffix(1);
+    }
+    condition.key = kdl::str_trim(key);
+    for (const auto& value :
+         kdl::str_split(std::string_view{rest}.substr(equals + 1), "|"))
+    {
+      if (auto trimmed = kdl::str_trim(value); !trimmed.empty())
+      {
+        condition.values.push_back(std::move(trimmed));
+      }
+    }
+    if (condition.values.empty())
+    {
+      return std::nullopt;
+    }
+  }
+  else
+  {
+    condition.key = std::move(rest);
+  }
+
+  if (condition.key.empty() || condition.key.find_first_of(" \t!=|") != std::string::npos)
+  {
+    return std::nullopt;
+  }
+  return condition;
+}
+
+bool conditionHolds(const PropertyCondition& condition, const std::string_view value)
+{
+  const auto trimmed = kdl::str_trim(value);
+  const auto isTrue = [&]() {
+    return !trimmed.empty() && trimmed != "0" && !kdl::ci::str_is_equal(trimmed, "false")
+           && !kdl::ci::str_is_equal(trimmed, "no")
+           && !kdl::ci::str_is_equal(trimmed, "off");
+  };
+  const auto matches =
+    condition.values.empty()
+      ? isTrue()
+      : std::ranges::any_of(condition.values, [&](const auto& expected) {
+          return kdl::ci::str_is_equal(expected, trimmed);
+        });
+  return matches != condition.negated;
 }
 
 kdl_reflect_impl(PropertyDefinition);

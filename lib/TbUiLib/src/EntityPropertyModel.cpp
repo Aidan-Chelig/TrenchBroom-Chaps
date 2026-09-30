@@ -302,7 +302,15 @@ std::vector<std::string> allKeys(
     }
   }
 
-  return result.release_data();
+  // A property under a `show_if` condition gets a row only while the condition holds for
+  // one of the entities, set on the entity or not: a toggled-off group of settings takes
+  // no room, and ticking its toggle brings the rows back with their values.
+  auto keys = result.release_data();
+  std::erase_if(keys, [&](const auto& key) {
+    return std::ranges::none_of(
+      nodes, [&](const auto* node) { return mdl::isPropertyShown(node->entity(), key); });
+  });
+  return keys;
 }
 
 auto makeKeyToPropertyRowMap(const std::vector<PropertyRow>& rows)
