@@ -38,6 +38,7 @@ struct SelectionChange;
 
 namespace ui
 {
+class AreaLightTool;
 class ClipTool;
 class AssembleBrushTool;
 class CreateEntityTool;
@@ -67,6 +68,7 @@ private:
   std::unique_ptr<DrawShapeTool> m_drawShapeTool;
   std::unique_ptr<MoveObjectsTool> m_moveObjectsTool;
   std::unique_ptr<ExtrudeTool> m_extrudeTool;
+  std::unique_ptr<AreaLightTool> m_areaLightTool;
   std::unique_ptr<RotateTool> m_rotateTool;
   std::unique_ptr<SweepTool> m_sweepTool;
   std::unique_ptr<ScaleTool> m_scaleTool;
@@ -109,6 +111,9 @@ public: // tools
 
   const ExtrudeTool& extrudeTool() const;
   ExtrudeTool& extrudeTool();
+
+  const AreaLightTool& areaLightTool() const;
+  AreaLightTool& areaLightTool();
 
   const RotateTool& rotateTool() const;
   RotateTool& rotateTool();

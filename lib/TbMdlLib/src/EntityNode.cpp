@@ -19,6 +19,7 @@
 
 #include "mdl/EntityNode.h"
 
+#include "mdl/AreaLight.h"
 #include "mdl/BrushNode.h"
 #include "mdl/EditorContext.h"
 #include "mdl/EntityDefinition.h"
@@ -39,7 +40,9 @@
 #include "vm/util.h"
 #include "vm/vec.h"
 
+#include <algorithm>
 #include <optional>
+#include <ranges>
 #include <vector>
 
 namespace tb::mdl
@@ -64,7 +67,14 @@ std::array<vm::vec3d, 24> EntityNode::boundsEdgeVertices() const
 {
   auto vertices = std::array<vm::vec3d, 24>{};
   auto index = size_t{0};
-  if (const auto projector = imageProjector(m_entity))
+  if (const auto light = areaLight(m_entity))
+  {
+    // The panel, crossed, and the arrow it shines along. The rest are zero length.
+    const auto outline = light->outlineVertices();
+    vertices.fill(light->center());
+    std::ranges::copy(outline | std::views::take(vertices.size()), vertices.begin());
+  }
+  else if (const auto projector = imageProjector(m_entity))
   {
     projector->localBounds.for_each_edge([&](const auto& start, const auto& end) {
       vertices[index++] = projector->transformation * start;
@@ -201,7 +211,16 @@ void EntityNode::doPick(
     auto boundsRay = ray;
     auto boundsTransform = vm::mat4x4d::identity();
     auto myBounds = logicalBounds();
-    if (const auto projector = imageProjector(m_entity))
+    if (const auto light = areaLight(m_entity))
+    {
+      boundsTransform = light->transformation;
+      if (const auto inverse = vm::invert(boundsTransform))
+      {
+        boundsRay = ray.transform(*inverse);
+        myBounds = light->pickBounds();
+      }
+    }
+    else if (const auto projector = imageProjector(m_entity))
     {
       boundsTransform = projector->transformation;
       if (const auto inverse = vm::invert(boundsTransform))
@@ -371,7 +390,12 @@ void EntityNode::validateBounds() const
     const auto definitionBounds =
       pointEntityDefinition ? pointEntityDefinition->bounds : DefaultBounds;
 
-    if (const auto projector = imageProjector(m_entity))
+    if (const auto light = areaLight(m_entity))
+    {
+      m_cachedBounds->logicalBounds =
+        light->pickBounds().transform(light->transformation);
+    }
+    else if (const auto projector = imageProjector(m_entity))
     {
       m_cachedBounds->logicalBounds =
         projector->localBounds.transform(projector->transformation);

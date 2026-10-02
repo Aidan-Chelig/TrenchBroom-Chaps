@@ -1210,6 +1210,16 @@ An entity link that is connected to a currently selected entity is rendered as a
 
 In the screenshot above, the link between the two info_null entities is rendered in green because neither of the entities is selected.
 
+### Area Lights {#area_lights}
+
+An `area_light` point entity is drawn as the rectangular panel the game lights from: filled with the light's color on the side it shines from and dark grey behind, crossed by its diagonals, with an arrow from its center pointing the way it shines. Click anywhere on the panel to select it.
+
+The panel's `width` and `height` properties are in map units. They run along the entity's local Y and Z axes, and the panel shines along its local X axis, all turned by its `angles` (pitch, yaw, roll). A new area light faces straight down.
+
+- **Resize:** select a single area light and drag one of the handles on its corners and edges. The opposite corner or edge stays put; hold #key(Alt) to resize around the center instead. Sizes snap to the grid, and the new size is shown on the panel while you drag.
+- **Rotate:** use the [rotate tool](#rotating_objects) or the rotate commands as with any other entity. They update the `angles` property.
+- **Move:** drag the panel as usual. Dropped from the entity browser onto a surface, it lands a couple of units off it.
+
 ## Undo and Redo {#undo_redo}
 
 Almost everything that you do in TrenchBroom can be undone by choosing #menu(Menu/Edit/Undo). This applies to every action that somehow modifies the map file (such as moving objects), but it also applies to some actions that do not change the map file, such as selection, hiding, and locking. There is no limit to how many actions you can undo, and once an action is undone, you can redo it by choosing #menu(Menu/Edit/Redo).

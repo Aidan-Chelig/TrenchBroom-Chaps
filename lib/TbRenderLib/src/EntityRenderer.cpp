@@ -22,6 +22,7 @@
 #include "gl/Camera.h"
 #include "gl/PrimType.h"
 #include "gl/VertexType.h"
+#include "mdl/AreaLight.h"
 #include "mdl/EditorContext.h"
 #include "mdl/Entity.h"
 #include "mdl/EntityDefinition.h"
@@ -575,6 +576,31 @@ auto makeColoredWireFrameBoundsVertexBuilder(
   };
 }
 
+/**
+ * Fills an area light's panel: the light's color on the side it shines from, dark grey
+ * behind. Map views cull back faces, so each side shows only from its front.
+ */
+void addAreaLightPanel(
+  std::vector<gl::VertexTypes::P3NC4::Vertex>& vertices, const mdl::AreaLight& light)
+{
+  static const auto backColor = vm::vec4f{0.15f, 0.15f, 0.15f, 1.0f};
+  const auto rgb = light.color.toVec();
+  const auto frontColor = vm::vec4f{rgb.x(), rgb.y(), rgb.z(), 1.0f};
+  const auto normal = vm::vec3f{light.normal()};
+  const auto corners = light.corners();
+
+  // corners() runs counterclockwise seen from the front, and front faces wind
+  // clockwise.
+  for (const auto& corner : corners | std::views::reverse)
+  {
+    vertices.emplace_back(vm::vec3f{corner}, normal, frontColor);
+  }
+  for (const auto& corner : corners)
+  {
+    vertices.emplace_back(vm::vec3f{corner}, -normal, backColor);
+  }
+}
+
 auto makeColoredSolidBoundsVertexBuilder(
   std::vector<gl::VertexTypes::P3NC4::Vertex>& vertices, const Color& color)
 {
@@ -654,7 +680,11 @@ void EntityRenderer::validateBounds()
 
           const auto hasModel =
             entityNode->entity().model() && entityNode->entity().model()->data();
-          if (!hasModel && !mdl::imageProjector(entityNode->entity()))
+          if (const auto light = mdl::areaLight(entityNode->entity()))
+          {
+            addAreaLightPanel(solidVertices, *light);
+          }
+          else if (!hasModel && !mdl::imageProjector(entityNode->entity()))
           {
             entityNode->logicalBounds().for_each_face(
               makeColoredSolidBoundsVertexBuilder(solidVertices, m_boundsColor));
@@ -722,7 +752,11 @@ void EntityRenderer::validateBounds()
 
           const auto hasModel =
             entityNode->entity().model() && entityNode->entity().model()->data();
-          if (!hasModel && !mdl::imageProjector(entityNode->entity()))
+          if (const auto light = mdl::areaLight(entityNode->entity()))
+          {
+            addAreaLightPanel(solidVertices, *light);
+          }
+          else if (!hasModel && !mdl::imageProjector(entityNode->entity()))
           {
             entityNode->logicalBounds().for_each_face(makeColoredSolidBoundsVertexBuilder(
               solidVertices, boundsColor(*entityNode)));

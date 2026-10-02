@@ -4,6 +4,7 @@ target_sources(TbMdlLib
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AddRemoveNodesCommand.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AddRemoveNodesUtils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AreaLight.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Autosaver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BasicShapes.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BezierPatch.cpp

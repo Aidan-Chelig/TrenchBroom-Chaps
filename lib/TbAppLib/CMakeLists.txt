@@ -3,6 +3,8 @@ add_library(TbAppLib STATIC)
 target_sources(TbAppLib
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AngleIndicatorRenderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AreaLightTool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AreaLightToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Animation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AssembleBrushTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AssembleBrushToolController3D.cpp
@@ -72,6 +74,8 @@ target_sources(TbAppLib
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/AngleIndicatorRenderer.h
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/AreaLightTool.h
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/AreaLightToolController.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/Animation.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/AssembleBrushTool.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/AssembleBrushToolController3D.h
