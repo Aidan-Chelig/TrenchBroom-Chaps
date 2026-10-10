@@ -22,6 +22,7 @@
 #include <QStackedLayout>
 #include <QWidget>
 
+#include "mdl/DoorPivot.h"
 #include "mdl/EditorContext.h"
 #include "mdl/Map.h"
 #include "mdl/Selection.h"
@@ -50,6 +51,8 @@
 #include "ui/VertexTool.h"
 
 #include "kd/contracts.h"
+
+#include <algorithm>
 
 namespace tb::ui
 {
@@ -470,7 +473,11 @@ bool MapViewToolBox::faceToolActive() const
 bool MapViewToolBox::canToggleControlPointTool() const
 {
   const auto& map = m_document.map();
-  return controlPointToolActive() || map.selection().hasOnlyPatches();
+  const auto& selection = map.selection();
+  return controlPointToolActive() || selection.hasOnlyPatches()
+         || std::ranges::any_of(selection.allEntities(), [](const auto* entityNode) {
+              return mdl::isDoorWithPivot(entityNode->entity());
+            });
 }
 
 bool MapViewToolBox::canTogglePathTool() const

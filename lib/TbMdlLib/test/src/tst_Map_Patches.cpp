@@ -21,6 +21,8 @@
 #include "mdl/BrushBuilder.h"
 #include "mdl/BrushFaceHandle.h"
 #include "mdl/BrushNode.h"
+#include "mdl/DoorPivot.h"
+#include "mdl/EntityNode.h"
 #include "mdl/Map.h"
 #include "mdl/MapFixture.h"
 #include "mdl/Map_Nodes.h"
@@ -183,6 +185,24 @@ TEST_CASE("Map_Patches")
   SECTION("transformControlPoints")
   {
     auto& map = fixture.create();
+
+    GIVEN("A selected door with an offset pivot")
+    {
+      const auto builder = BrushBuilder{map.worldNode().mapFormat(), map.worldBounds()};
+      auto* door =
+        new EntityNode{Entity{{{"classname", "func_door"}, {"pivot_offset", "8 0 0"}}}};
+      door->addChild(new BrushNode{builder.createCube(32.0, "material") | kdl::value()});
+      addNodes(map, {{&parentForNodes(map), {door}}});
+      selectNodes(map, {door});
+
+      const auto originalPosition = doorPivotPosition(*door);
+      CHECK(transformControlPoints(
+        map, {originalPosition}, vm::translation_matrix(vm::vec3d{4, 0, 0})));
+      CHECK(doorPivotOffset(door->entity()) == vm::vec3d{12, 0, 0});
+
+      map.undoCommand();
+      CHECK(doorPivotOffset(door->entity()) == vm::vec3d{8, 0, 0});
+    }
 
     GIVEN("Two selected patches and no patch has any of the given control points")
     {

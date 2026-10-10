@@ -23,6 +23,7 @@
 #include "mdl/Brush.h"
 #include "mdl/BrushFace.h"
 #include "mdl/BrushNode.h"
+#include "mdl/DoorPivot.h"
 #include "mdl/EntityNode.h"
 #include "mdl/Grid.h"
 #include "mdl/GroupNode.h"
@@ -240,37 +241,48 @@ std::vector<ControlPointHandle> ControlPointHandle::getHandles(const Node& node)
 {
   auto result = std::vector<ControlPointHandle>{};
 
-  node.accept(kdl::overload(
-    [](const WorldNode&) {},
-    [](const LayerNode&) {},
-    [](const GroupNode&) {},
-    [&](const EntityNode& entityNode) {
-      if (const auto path = readPath(entityNode.entity()))
-      {
-        const auto transform =
-          vm::translation_matrix(entityNode.entity().origin()) * entityNode.entity().rotation();
-        for (const auto& pathNode : path.value().nodes)
+  node.accept(
+    kdl::overload(
+      [](const WorldNode&) {},
+      [](const LayerNode&) {},
+      [](const GroupNode&) {},
+      [&](const EntityNode& entityNode) {
+        if (isDoorWithPivot(entityNode.entity()))
         {
-          result.emplace_back(vm::vec3d{transform * pathNode.position});
+          result.emplace_back(doorPivotPosition(entityNode));
         }
-        if (path.value().kind == PathKind::Bezier)
+        if (const auto path = readPath(entityNode.entity()))
         {
-          for (size_t i = 0; i < path.value().segmentCount(); ++i)
+          const auto transform = vm::translation_matrix(entityNode.entity().origin())
+                                 * entityNode.entity().rotation();
+          for (const auto& pathNode : path.value().nodes)
           {
-            const auto controls = path.value().segmentControls(i);
-            result.emplace_back(vm::vec3d{transform * controls[1]});
-            result.emplace_back(vm::vec3d{transform * controls[2]});
+            result.emplace_back(vm::vec3d{transform * pathNode.position});
+          }
+          if (path.value().kind == PathKind::Bezier)
+          {
+            for (size_t i = 0; i < path.value().segmentCount(); ++i)
+            {
+              const auto controls = path.value().segmentControls(i);
+              result.emplace_back(vm::vec3d{transform * controls[1]});
+              result.emplace_back(vm::vec3d{transform * controls[2]});
+            }
           }
         }
-      }
-    },
-    [](const BrushNode&) {},
-    [&](const PatchNode& patchNode) {
-      for (const auto& controlPoint : patchNode.patch().controlPoints())
-      {
-        result.emplace_back(controlPoint.xyz());
-      }
-    }));
+      },
+      [&](const BrushNode& brushNode) {
+        if (const auto* entityNode = brushNode.entity();
+            entityNode && isDoorWithPivot(entityNode->entity()))
+        {
+          result.emplace_back(doorPivotPosition(*entityNode));
+        }
+      },
+      [&](const PatchNode& patchNode) {
+        for (const auto& controlPoint : patchNode.patch().controlPoints())
+        {
+          result.emplace_back(controlPoint.xyz());
+        }
+      }));
 
   return result;
 }

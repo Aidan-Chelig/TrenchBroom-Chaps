@@ -32,6 +32,7 @@
 #include "mdl/PatchNode.h"
 #include "mdl/PathEntity.h"
 
+#include "vm/approx.h"
 #include "vm/bbox.h"
 #include "vm/ray.h"
 #include "vm/segment.h"
@@ -259,6 +260,33 @@ TEST_CASE("FaceHandle")
 
 TEST_CASE("ControlPointHandle")
 {
+  SECTION("doors expose their local pivot offset as a control point")
+  {
+    auto entity = Entity{{
+      {"classname", "func_door"},
+      {"pivot_offset", "8 0 0"},
+      {"angles", "0 90 0"},
+    }};
+    auto node = EntityNode{std::move(entity)};
+    const auto handles = ControlPointHandle::getHandles(node);
+    REQUIRE(handles.size() == 1u);
+    CHECK(handles[0].position == vm::approx{node.logicalBounds().center() + vm::vec3d{0, 8, 0}});
+  }
+
+  SECTION("a selected door brush exposes its owner's pivot")
+  {
+    const auto worldBounds = vm::bbox3d{8192.0};
+    auto builder = BrushBuilder{MapFormat::Quake3, worldBounds};
+    auto node =
+      EntityNode{Entity{{{"classname", "func_door"}, {"pivot_offset", "8 0 0"}}}};
+    auto* brush = new BrushNode{builder.createCube(32.0, "material").value()};
+    node.addChild(brush);
+
+    const auto handles = ControlPointHandle::getHandles(*brush);
+    REQUIRE(handles.size() == 1u);
+    CHECK(handles[0].position == vm::vec3d{8, 0, 0});
+  }
+
   SECTION("path entities expose transformed path nodes")
   {
     auto entity = Entity{{

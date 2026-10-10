@@ -22,6 +22,7 @@
 #include "mdl/ApplyAndSwap.h"
 #include "mdl/BezierPatch.h"
 #include "mdl/ControlPointCommand.h"
+#include "mdl/DoorPivot.h"
 #include "mdl/Map.h"
 #include "mdl/Map_Groups.h"
 #include "mdl/Map_Nodes.h"
@@ -39,6 +40,8 @@
 #include "kd/vector_utils.h"
 
 #include "vm/mat_ext.h"
+
+#include <fmt/format.h>
 
 #include <ranges>
 
@@ -129,16 +132,44 @@ bool transformControlPoints(
   const std::vector<vm::vec3d>& controlPointPositions,
   const vm::mat4x4d& transform)
 {
-  const auto hasPathEntity = std::ranges::any_of(
-    map.selection().allEntities(),
-    [](const auto* entityNode) { return readPath(entityNode->entity()).is_success(); });
-  auto transformPathNodes = [&]() {
+  const auto selectedEntities = map.selection().allEntities();
+  const auto hasEntityControlPoint =
+    std::ranges::any_of(selectedEntities, [](const auto* entityNode) {
+      return isDoorWithPivot(entityNode->entity())
+             || readPath(entityNode->entity()).is_success();
+    });
+  auto transformEntityControlPoints = [&]() {
     const auto positions =
       std::set<vm::vec3d>{controlPointPositions.begin(), controlPointPositions.end()};
+    auto entityIndex = size_t{0};
     return applyToNodeContents(
-      map.selection().allEntities(),
+      selectedEntities,
       kdl::overload(
         [&](Entity& entity) {
+          const auto* entityNode = selectedEntities.at(entityIndex++);
+          if (isDoorWithPivot(entity))
+          {
+            const auto worldPosition = doorPivotPosition(*entityNode);
+            if (positions.contains(worldPosition))
+            {
+              const auto inverseRotation = vm::invert(entity.rotation());
+              if (!inverseRotation)
+              {
+                return false;
+              }
+              const auto localOffset =
+                *inverseRotation
+                * (transform * worldPosition - entityNode->logicalBounds().center());
+              entity.addOrUpdateProperty(
+                "pivot_offset",
+                fmt::format(
+                  "{:.17g} {:.17g} {:.17g}",
+                  localOffset.x(),
+                  localOffset.y(),
+                  localOffset.z()));
+            }
+            return true;
+          }
           const auto pathResult = readPath(entity);
           if (!pathResult)
           {
@@ -190,19 +221,19 @@ bool transformControlPoints(
   const auto controlPointPositionSet =
     std::set<vm::vec3d>{controlPointPositions.begin(), controlPointPositions.end()};
 
-  auto newNodes = hasPathEntity ? transformPathNodes()
-                                : applyToNodeContents(
-                                    map.selection().patches,
-                                    kdl::overload(
-                                      [](Layer&) { return true; },
-                                      [](Group&) { return true; },
-                                      [](Entity&) { return true; },
-                                      [](Brush&) { return true; },
-                                      [&](BezierPatch& patch) {
-                                        patch.transformControlPoints(
-                                          controlPointPositionSet, transform);
-                                        return true;
-                                      }));
+  auto newNodes = hasEntityControlPoint ? transformEntityControlPoints()
+                                        : applyToNodeContents(
+                                            map.selection().patches,
+                                            kdl::overload(
+                                              [](Layer&) { return true; },
+                                              [](Group&) { return true; },
+                                              [](Entity&) { return true; },
+                                              [](Brush&) { return true; },
+                                              [&](BezierPatch& patch) {
+                                                patch.transformControlPoints(
+                                                  controlPointPositionSet, transform);
+                                                return true;
+                                              }));
 
   if (!newNodes)
   {
