@@ -193,6 +193,39 @@ TEST_CASE("Map")
     CHECK_THAT(env.loadFile("test.map"), ContainsSubstring("\"name\" \"func_door_1\""));
   }
 
+  SECTION("saveAs repairs duplicate required names")
+  {
+    auto fixture = MapFixture{};
+    auto& map = fixture.create();
+    map.entityDefinitionManager().setDefinitions({
+      {"func_door",
+       {},
+       {},
+       {{.key = "name",
+         .valueType = PropertyValueTypes::LinkTarget{},
+         .requiresUniqueName = true}},
+       PointEntityDefinition{vm::bbox3d{16.0}, {}, {}}},
+    });
+
+    auto* first = new EntityNode{Entity{{
+      {EntityPropertyKeys::Classname, "func_door"}, {"name", "door_2"}}}};
+    auto* duplicate = new EntityNode{Entity{{
+      {EntityPropertyKeys::Classname, "func_door"}, {"name", "door_2"}}}};
+    auto* reserved = new EntityNode{Entity{{
+      {EntityPropertyKeys::Classname, "func_door"}, {"name", "door_3"}}}};
+    addNodes(map, {{&parentForNodes(map), {first, duplicate, reserved}}});
+
+    auto env = fs::TestEnvironment{};
+    REQUIRE(map.saveAs(env.dir() / "test.map"));
+    const auto& firstName = *first->entity().property("name");
+    const auto& duplicateName = *duplicate->entity().property("name");
+    CHECK((
+      (firstName == "door_2" && duplicateName == "door_4")
+      || (firstName == "door_4" && duplicateName == "door_2")));
+    CHECK(*reserved->entity().property("name") == "door_3");
+    CHECK_THAT(env.loadFile("test.map"), ContainsSubstring("\"name\" \"door_4\""));
+  }
+
   SECTION("selection")
   {
     auto fixture = MapFixture{};

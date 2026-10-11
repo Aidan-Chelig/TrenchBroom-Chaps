@@ -1572,7 +1572,9 @@ TEST_CASE("ensureUniqueEntityNames")
     new EntityNode{Entity{{{EntityPropertyKeys::Classname, "func_door"}}}};
   addNodes(map, {{&parentForNodes(map), {existing, firstUnnamed, secondUnnamed}}});
 
+  CHECK(hasMissingOrDuplicateUniqueEntityNames(map));
   REQUIRE(ensureUniqueEntityNames(map));
+  CHECK(!hasMissingOrDuplicateUniqueEntityNames(map));
   CHECK(*existing->entity().property("name") == "func_door_1");
   const auto firstGeneratedName = *firstUnnamed->entity().property("name");
   const auto secondGeneratedName = *secondUnnamed->entity().property("name");
@@ -1596,16 +1598,41 @@ TEST_CASE("ensureUniqueEntityNames")
   }}};
   addNodes(map, {{&parentForNodes(map), {firstDuplicate, secondDuplicate}}});
 
-  CHECK(hasDuplicateUniqueEntityNames(map));
+  CHECK(hasMissingOrDuplicateUniqueEntityNames(map));
   REQUIRE(ensureUniqueEntityNames(map, true));
-  CHECK(!hasDuplicateUniqueEntityNames(map));
+  CHECK(!hasMissingOrDuplicateUniqueEntityNames(map));
 
   const auto repairedNames = std::vector{
     *firstDuplicate->entity().property("name"),
     *secondDuplicate->entity().property("name")};
   CHECK_THAT(
     repairedNames,
-    UnorderedEquals(std::vector<std::string>{"custom_name", "func_door_4"}));
+    UnorderedEquals(std::vector<std::string>{"custom_name", "custom_name_1"}));
+
+  auto* numberedOriginal = new EntityNode{Entity{{
+    {EntityPropertyKeys::Classname, "func_door"},
+    {"name", "door_7"},
+  }}};
+  auto* numberedDuplicate = new EntityNode{Entity{{
+    {EntityPropertyKeys::Classname, "func_door"},
+    {"name", "door_7"},
+  }}};
+  auto* reservedEight = new EntityNode{Entity{{
+    {EntityPropertyKeys::Classname, "func_door"},
+    {"name", "door_8"},
+  }}};
+  auto* reservedNine = new EntityNode{Entity{{
+    {EntityPropertyKeys::Classname, "func_door"},
+    {"name", "door_9"},
+  }}};
+  addNodes(map, {{&parentForNodes(map),
+                  {numberedOriginal, numberedDuplicate, reservedEight, reservedNine}}});
+
+  CHECK(hasMissingOrDuplicateUniqueEntityNames(map));
+  REQUIRE(ensureUniqueEntityNames(map, true));
+  CHECK(!hasMissingOrDuplicateUniqueEntityNames(map));
+  CHECK(*numberedOriginal->entity().property("name") == "door_7");
+  CHECK(*numberedDuplicate->entity().property("name") == "door_10");
 }
 
 } // namespace tb::mdl

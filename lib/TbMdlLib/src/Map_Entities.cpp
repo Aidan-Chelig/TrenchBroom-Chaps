@@ -41,6 +41,8 @@
 #include "kd/overload.h"
 #include "kd/string_utils.h"
 
+#include <charconv>
+#include <limits>
 #include <unordered_set>
 
 namespace tb::mdl
@@ -492,7 +494,7 @@ bool canClearProtectedEntityProperties(const Map& map)
   return canUpdateLinkedGroups(kdl::vec_static_cast<Node*>(entityNodes));
 }
 
-bool hasDuplicateUniqueEntityNames(const Map& map)
+bool hasMissingOrDuplicateUniqueEntityNames(const Map& map)
 {
   auto uniqueNames = std::unordered_set<std::string>{};
   for (const auto* node : collectDescendants(std::vector<const Node*>{&map.worldNode()}))
@@ -511,8 +513,8 @@ bool hasDuplicateUniqueEntityNames(const Map& map)
         continue;
       }
 
-      if (const auto* value = entityNode->entity().property(propertyDefinition.key);
-          value && !value->empty() && !uniqueNames.insert(*value).second)
+      const auto* value = entityNode->entity().property(propertyDefinition.key);
+      if (!value || value->empty() || !uniqueNames.insert(*value).second)
       {
         return true;
       }
@@ -557,7 +559,6 @@ bool ensureUniqueEntityNames(Map& map, const bool replaceDuplicates)
     }
   }
 
-  auto nextSuffix = size_t{1};
   auto encounteredUniqueNames = std::unordered_set<std::string>{};
   auto nodesToUpdate = std::vector<std::pair<Node*, NodeContents>>{};
   for (auto* entityNode : entityNodes)
@@ -585,10 +586,32 @@ bool ensureUniqueEntityNames(Map& map, const bool replaceDuplicates)
         continue;
       }
 
+      auto baseName = currentValue && !currentValue->empty()
+                        ? *currentValue
+                        : entity.classname();
+      auto nextSuffix = size_t{1};
+      if (currentValue && !currentValue->empty())
+      {
+        const auto separator = baseName.find_last_of('_');
+        if (separator != std::string::npos && separator + 1 < baseName.size())
+        {
+          auto suffix = size_t{};
+          const auto* begin = baseName.data() + separator + 1;
+          const auto* end = baseName.data() + baseName.size();
+          const auto [ptr, error] = std::from_chars(begin, end, suffix);
+          if (error == std::errc{} && ptr == end
+              && suffix < std::numeric_limits<size_t>::max())
+          {
+            baseName.resize(separator);
+            nextSuffix = suffix + 1;
+          }
+        }
+      }
+
       auto generatedName = std::string{};
       do
       {
-        generatedName = entity.classname() + "_" + std::to_string(nextSuffix++);
+        generatedName = baseName + "_" + std::to_string(nextSuffix++);
       } while (usedNames.contains(generatedName));
 
       usedNames.insert(generatedName);

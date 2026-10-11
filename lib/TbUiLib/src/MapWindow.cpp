@@ -1070,17 +1070,17 @@ bool MapWindow::saveDocumentAs()
 bool MapWindow::confirmUniqueEntityNameChanges()
 {
   auto& map = m_document->map();
-  if (!mdl::hasDuplicateUniqueEntityNames(map))
+  if (!mdl::hasMissingOrDuplicateUniqueEntityNames(map))
   {
     return true;
   }
 
   const auto result = QMessageBox::question(
     this,
-    tr("Duplicate Entity Names"),
+    tr("Missing or Duplicate Entity Names"),
     tr(
-      "Some entity properties that require unique names have duplicate values. "
-      "May TrenchBroom rename the duplicates before saving?"),
+      "Some entities are missing required unique names or share a name. "
+      "May TrenchBroom assign collision-free names before saving?"),
     QMessageBox::Yes | QMessageBox::Cancel,
     QMessageBox::Yes);
   if (result != QMessageBox::Yes)

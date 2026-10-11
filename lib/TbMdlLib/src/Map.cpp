@@ -861,7 +861,7 @@ Result<void> Map::save()
 
 Result<void> Map::saveAs(const std::filesystem::path& path)
 {
-  if (!ensureUniqueEntityNames(*this))
+  if (!ensureUniqueEntityNames(*this, true))
   {
     return Error{"Could not generate required unique entity names"};
   }
